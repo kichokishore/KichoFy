@@ -1,8 +1,6 @@
-// src/pages/Profile.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-// ✅ FIXED ICON IMPORTS
 import { 
   FiEdit3 as Edit3,
   FiSave as Save,
@@ -12,10 +10,11 @@ import {
   FiMail as Mail,
   FiUser as User,
   FiGlobe as Globe,
-  FiHash as Hash 
+  FiHash as Hash,
+  FiUpload as UploadIcon
 } from 'react-icons/fi';
 import { useApp } from '../contexts/AppContext';
-import { supabase } from '../utils/supabaseClient'; // ✅ Fixed path
+import { supabase } from '../utils/supabaseClient';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -69,6 +68,9 @@ export const Profile: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize form with user data
   useEffect(() => {
@@ -85,6 +87,7 @@ export const Profile: React.FC = () => {
         country: state.user.country || '',
         pincode: state.user.pincode || '',
       });
+      setAvatarUrl(state.user.avatar_url || null);
     }
   }, [state.user]);
 
@@ -117,6 +120,7 @@ export const Profile: React.FC = () => {
         country: data.country || prev.country,
         pincode: data.pincode || prev.pincode,
       }));
+      setAvatarUrl(data.avatar_url || null);
     };
 
     fetchProfile();
@@ -160,6 +164,7 @@ export const Profile: React.FC = () => {
         state: formData.state || null,
         country: formData.country || null,
         pincode: formData.pincode || null,
+        avatar_url: avatarUrl || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', state.user.id);
@@ -185,6 +190,7 @@ export const Profile: React.FC = () => {
         state: formData.state,
         country: formData.country,
         pincode: formData.pincode,
+        avatar_url: avatarUrl,
       },
     });
 
@@ -206,14 +212,64 @@ export const Profile: React.FC = () => {
         country: state.user.country || '',
         pincode: state.user.pincode || '',
       });
+      setAvatarUrl(state.user.avatar_url || null);
     }
     setIsEditing(false);
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    dispatch({ type: 'SET_USER', payload: null }); // ✅ Use SET_USER with null
+    dispatch({ type: 'SET_USER', payload: null });
     navigate('/login');
+  };
+
+  const uploadAvatar = async (file: File) => {
+    if (!state.user?.id) return;
+    
+    setUploading(true);
+    try {
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${state.user.id}/${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+      return publicUrl;
+    } catch (error: any) {
+      setError('Failed to upload avatar: ' + error.message);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file');
+      return;
+    }
+    
+    await uploadAvatar(file);
+  };
+
+  const handleAvatarClick = () => {
+    if (isEditing && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   if (!state.user) {
@@ -244,14 +300,37 @@ export const Profile: React.FC = () => {
           <div className="relative h-48 bg-gradient-to-r from-primary to-purple-600">
             <div className="absolute -bottom-16 left-8">
               <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-32 h-32 rounded-full bg-white border-4 border-white shadow-xl overflow-hidden"
+                whileHover={isEditing ? { scale: 1.1 } : {}}
+                whileTap={isEditing ? { scale: 0.95 } : {}}
+                onClick={handleAvatarClick}
+                className={`w-32 h-32 rounded-full bg-white border-4 border-white shadow-xl overflow-hidden ${
+                  isEditing ? 'cursor-pointer' : ''
+                }`}
               >
-                <div className="w-full h-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                  {state.user.name?.charAt(0).toUpperCase() || '?'}
-                </div>
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                    {state.user.name?.charAt(0).toUpperCase() || '?'}
+                  </div>
+                )}
+                {isEditing && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <UploadIcon className="text-white" size={24} />
+                  </div>
+                )}
               </motion.div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+              />
             </div>
             <div className="absolute top-6 right-6 flex space-x-3">
               {!isEditing ? (
@@ -270,10 +349,10 @@ export const Profile: React.FC = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSave}
-                    disabled={isLoading}
+                    disabled={isLoading || uploading}
                     className="flex items-center px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 disabled:opacity-50"
                   >
-                    {isLoading ? (
+                    {isLoading || uploading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
                       <>

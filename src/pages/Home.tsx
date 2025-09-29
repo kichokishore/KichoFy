@@ -2,22 +2,38 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, TrendingUp, Award, Truck } from 'lucide-react';
 import { ProductCard } from '../components/UI/ProductCard';
-import { products, categories } from '../data/products';
+import { useProducts } from '../hooks/useProducts';
+import { useCategories } from '../hooks/useCategories';
 import llg3 from '../assets/llg3.png';
 import { useTranslation } from '../hooks/useTranslation';
 
 export const Home: React.FC = () => {
   const { t } = useTranslation();
+  const { products: allProducts, loading: productsLoading } = useProducts();
+  const { categories, loading: categoriesLoading } = useCategories();
 
-  const featuredProducts = products.slice(0, 4);
-  const newProducts = products.filter(p => p.isNew).slice(0, 4);
-  const bestSellers = products.filter(p => p.isBestSeller).slice(0, 4);
+  // Filter products for different sections
+  const featuredProducts = allProducts.slice(0, 4);
+  const newProducts = allProducts.filter(p => p.is_new).slice(0, 4);
+  const bestSellers = allProducts.filter(p => p.is_best_seller).slice(0, 4);
+
+  if (productsLoading || categoriesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fadeIn">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden"
-      style={{ backgroundImage: `url(${llg3})`}}
+      <section 
+        className="relative bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden"
+        style={{ backgroundImage: `url(${llg3})` }}
       >
         <div className="container mx-auto px-4 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -40,14 +56,12 @@ export const Home: React.FC = () => {
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
                 </Link>
                 <Link
-                  to="/cart"
+                  to="/new-arrivals"
                   className="inline-flex items-center border-2 border-primary text-primary hover:bg-primary hover:text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105"
                 >
                   {t('newCollection')}
                 </Link>
               </div>
-
-
             </div>
 
             <div className="relative">
@@ -118,7 +132,7 @@ export const Home: React.FC = () => {
                 className="group relative overflow-hidden rounded-2xl hover-lift"
               >
                 <img
-                  src={category.image}
+                  src={category.image || '/placeholder-category.jpg'}
                   alt={category.name}
                   className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
                 />
@@ -146,21 +160,37 @@ export const Home: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {featuredProducts.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                {featuredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
 
-          <div className="text-center">
-            <Link
-              to="/collections"
-              className="inline-flex items-center bg-primary hover:bg-primary-light text-white px-8 py-3 rounded-full font-semibold transition-all duration-300 hover:scale-105"
-            >
-              View All Products
-              <ArrowRight className="ml-2" size={18} />
-            </Link>
-          </div>
+              <div className="text-center">
+                <Link
+                  to="/collections"
+                  className="inline-flex items-center bg-primary hover:bg-primary-light text-white px-8 py-3 rounded-full font-semibold transition-all duration-300 hover:scale-105"
+                >
+                  View All Products
+                  <ArrowRight className="ml-2" size={18} />
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <TrendingUp size={64} className="mx-auto" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Featured products coming soon
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                We're currently updating our featured collection
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -185,21 +215,37 @@ export const Home: React.FC = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-            {newProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {newProducts.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+                {newProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
 
-          <div className="text-center md:hidden">
-            <Link
-              to="/new-arrivals"
-              className="inline-flex items-center text-primary hover:text-primary-light font-semibold transition-colors"
-            >
-              View All New Arrivals
-              <ArrowRight className="ml-2" size={18} />
-            </Link>
-          </div>
+              <div className="text-center md:hidden">
+                <Link
+                  to="/new-arrivals"
+                  className="inline-flex items-center text-primary hover:text-primary-light font-semibold transition-colors"
+                >
+                  View All New Arrivals
+                  <ArrowRight className="ml-2" size={18} />
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Award size={64} className="mx-auto" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                New arrivals coming soon
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Check back for our latest fashion collections
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -224,21 +270,37 @@ export const Home: React.FC = () => {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-            {bestSellers.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {bestSellers.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+                {bestSellers.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
 
-          <div className="text-center md:hidden">
-            <Link
-              to="/best-sellers"
-              className="inline-flex items-center text-primary hover:text-primary-light font-semibold transition-colors"
-            >
-              View All Best Sellers
-              <ArrowRight className="ml-2" size={18} />
-            </Link>
-          </div>
+              <div className="text-center md:hidden">
+                <Link
+                  to="/best-sellers"
+                  className="inline-flex items-center text-primary hover:text-primary-light font-semibold transition-colors"
+                >
+                  View All Best Sellers
+                  <ArrowRight className="ml-2" size={18} />
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Star size={64} className="mx-auto" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Best sellers coming soon
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Our most popular items will be here soon
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

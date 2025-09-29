@@ -1,16 +1,28 @@
 import React from 'react';
 import { Calendar, Star, TrendingUp } from 'lucide-react';
 import { ProductCard } from '../components/UI/ProductCard';
-import { products } from '../data/products';
+import { useProducts } from '../hooks/useProducts';
 import { useTranslation } from '../hooks/useTranslation';
 
 export const NewArrivals: React.FC = () => {
   const { t } = useTranslation();
+  const { products: newProducts, loading: newLoading } = useProducts({ isNew: true });
+  const { products: allProducts, loading: allLoading } = useProducts();
 
-  const newProducts = products.filter(p => p.isNew);
-  const recentProducts = products
+  const recentProducts = allProducts
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 8);
+
+  if (newLoading || allLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Loading new arrivals...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fadeIn">

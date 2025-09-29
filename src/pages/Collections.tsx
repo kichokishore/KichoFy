@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Filter, Grid2x2 as Grid, List, SlidersHorizontal } from 'lucide-react';
 import { ProductCard } from '../components/UI/ProductCard';
-import { products, categories } from '../data/products';
+import { useProducts } from '../hooks/useProducts';
+import { useCategories } from '../hooks/useCategories';
 import { useTranslation } from '../hooks/useTranslation';
 
 export const Collections: React.FC = () => {
@@ -12,9 +13,12 @@ export const Collections: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  const { products: allProducts, loading: productsLoading } = useProducts();
+  const { categories, loading: categoriesLoading } = useCategories();
+
   const filteredProducts = useMemo(() => {
-    let filtered = products.filter(product => {
-      const categoryMatch = selectedCategory === 'all' || product.category === selectedCategory;
+    let filtered = allProducts.filter(product => {
+      const categoryMatch = selectedCategory === 'all' || product.category_id === selectedCategory;
       const priceMatch = product.price >= priceRange[0] && product.price <= priceRange[1];
       return categoryMatch && priceMatch;
     });
@@ -36,16 +40,27 @@ export const Collections: React.FC = () => {
       default:
         // Featured - show best sellers and new items first
         filtered.sort((a, b) => {
-          if (a.isBestSeller && !b.isBestSeller) return -1;
-          if (!a.isBestSeller && b.isBestSeller) return 1;
-          if (a.isNew && !b.isNew) return -1;
-          if (!a.isNew && b.isNew) return 1;
+          if (a.is_best_seller && !b.is_best_seller) return -1;
+          if (!a.is_best_seller && b.is_best_seller) return 1;
+          if (a.is_new && !b.is_new) return -1;
+          if (!a.is_new && b.is_new) return 1;
           return 0;
         });
     }
 
     return filtered;
-  }, [selectedCategory, sortBy, priceRange]);
+  }, [allProducts, selectedCategory, sortBy, priceRange]);
+
+  if (productsLoading || categoriesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Loading collections...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

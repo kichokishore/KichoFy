@@ -1,39 +1,85 @@
-export interface User {
-  id: string;
-  name: string | null;
-  email: string | null;
-  phone: string | null;
-  mobile_number: string | null;        // 👈 new field from your schema
-  address_line1: string | null;        // 👈 split address (better than single "address")
-  address_line2: string | null;        // 👈
-  city: string | null;                 // 👈
-  state: string | null;                // 👈
-  country: string | null;              // 👈
-  pincode: string | null;              // 👈
-  role: string | null;                 // e.g., 'customer'
-  created_at: string;
-  updated_at: string | null;
-}
-
 export interface Product {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
-  originalPrice?: number;
-  category: string;
-  subcategory?: string;
+  original_price: number | null;
+  category_id: string | null;
+  subcategory: string | null;
   stock: number;
-  image_url: string;
-  images?: string[];
-  sizes?: string[];
-  colors?: string[];
-  tags?: string[];
-  rating?: number;
-  reviews?: number;
-  isNew?: boolean;
-  isBestSeller?: boolean;
+  image_url: string | null;
+  images: string[];
+  sizes: string[];
+  colors: string[];
+  tags: string[];
+  rating: number | null;
+  reviews: number;
+  is_new: boolean;
+  is_best_seller: boolean;
   created_at: string;
+  updated_at: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  image: string | null;
+  parent_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Order {
+  id: string;
+  user_id: string;
+  status: string;
+  total_amount: number;
+  payment_status: string;
+  created_at: string;
+  updated_at: string;
+  order_items: OrderItem[];
+}
+
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  product_id: string;
+  quantity: number;
+  price: number;
+  size: string | null;
+  color: string | null;
+  product?: Product;
+}
+
+export interface Review {
+  id: string;
+  product_id: string;
+  user_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  profiles?: {
+    name: string;
+  };
+}
+
+export interface User {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  mobile_number: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  pincode: string | null;
+  role: string;
+  created_at: string;
+  updated_at: string;
+  avatar_url: string | null; 
 }
 
 export interface CartItem {
@@ -44,21 +90,4 @@ export interface CartItem {
   size?: string;
   color?: string;
   product?: Product;
-}
-
-export interface Order {
-  id: string;
-  user_id: string;
-  products: CartItem[];
-  total_price: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  shipping_address: string;
-  payment_method: string;
-  created_at: string;
-}
-
-export interface Language {
-  code: 'en' | 'ta' | 'hi' | 'te';
-  name: string;
-  flag: string;
 }

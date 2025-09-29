@@ -1,16 +1,28 @@
 import React from 'react';
 import { Award, Star, TrendingUp, Users } from 'lucide-react';
 import { ProductCard } from '../components/UI/ProductCard';
-import { products } from '../data/products';
+import { useProducts } from '../hooks/useProducts';
 import { useTranslation } from '../hooks/useTranslation';
 
 export const BestSellers: React.FC = () => {
   const { t } = useTranslation();
+  const { products: bestSellerProducts, loading: bestSellersLoading } = useProducts({ isBestSeller: true });
+  const { products: allProducts, loading: allLoading } = useProducts();
 
-  const bestSellerProducts = products.filter(p => p.isBestSeller);
-  const topRatedProducts = products
+  const topRatedProducts = allProducts
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 8);
+
+  if (bestSellersLoading || allLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Loading best sellers...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 animate-fadeIn">

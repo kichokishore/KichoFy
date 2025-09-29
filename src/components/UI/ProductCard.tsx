@@ -11,41 +11,49 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) => {
-  const { dispatch } = useApp();
+  const { dispatch, state } = useApp();
   const { t } = useTranslation();
 
   const addToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
+    if (!state.user) {
+      // Redirect to login if user is not authenticated
+      window.location.href = '/login';
+      return;
+    }
+    
     dispatch({
       type: 'ADD_TO_CART',
       payload: {
         id: `cart_${product.id}_${Date.now()}`,
-        user_id: 'current_user', // Will be replaced with actual user ID
+        user_id: state.user.id,
         product_id: product.id,
         quantity: 1,
+        size: product.sizes?.[0] || 'Free Size',
+        color: product.colors?.[0] || 'Default',
         product: product,
       }
     });
   };
 
-  const discount = product.originalPrice 
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discount = product.original_price 
+    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
 
   return (
     <div className={`group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden hover-lift ${className}`}>
       <div className="relative overflow-hidden">
         <img
-          src={product.image_url}
+          src={product.image_url || '/placeholder-image.jpg'}
           alt={product.name}
           className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
         />
         
         {/* Badges */}
         <div className="absolute top-4 left-4 flex flex-col space-y-2">
-          {product.isNew && (
+          {product.is_new && (
             <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
               NEW
             </span>
@@ -55,7 +63,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, className = '
               -{discount}%
             </span>
           )}
-          {product.isBestSeller && (
+          {product.is_best_seller && (
             <span className="bg-primary text-white text-xs px-2 py-1 rounded-full font-medium">
               BESTSELLER
             </span>
@@ -122,9 +130,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, className = '
             <span className="text-xl font-bold text-primary">
               ₹{product.price.toLocaleString()}
             </span>
-            {product.originalPrice && (
+            {product.original_price && (
               <span className="text-gray-400 line-through text-sm">
-                ₹{product.originalPrice.toLocaleString()}
+                ₹{product.original_price.toLocaleString()}
               </span>
             )}
           </div>
