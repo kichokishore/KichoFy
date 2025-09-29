@@ -1,38 +1,38 @@
-// src/pages/Auth/Login.tsx
-import React, { useState, useEffect } from 'react';
+// src/pages/Signup.tsx
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { supabase } from '../../utils/supabaseClient';
 
-export const Login: React.FC = () => {
-  const { dispatch, state } = useApp(); // ✅ Get current language
+export const Signup: React.FC = () => {
+  const { dispatch } = useApp();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Auto-redirect if already logged in
-  useEffect(() => {
-    if (state.user) {
-      navigate('/');
-    }
-  }, [state.user, navigate]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
+    // Step 1: Sign up with Supabase Auth
+    const { data, error: authError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
+      options: {
+        data: {
+          name: formData.name,
+        },
+      },
     });
 
     if (authError) {
@@ -41,43 +41,43 @@ export const Login: React.FC = () => {
       return;
     }
 
-    // Fetch full profile
-    const {data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-
-    if (profileError) {
-      console.error('Profile fetch error:', profileError);
-      setError('Failed to load user profile');
+    if (!data.user) {
+      setError('User creation failed. Please try again.');
       setIsLoading(false);
       return;
     }
 
+    // Step 2: Insert into `profiles` table
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: data.user.id,
+        name: formData.name,
+        email: formData.email,
+        role: 'customer',
+      });
 
+    if (profileError) {
+      console.error('Profile insert error:', profileError);
+      setError('Account created, but profile setup failed. Please contact support.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Step 3: Set user in context
     dispatch({
       type: 'SET_USER',
       payload: {
-        id: profileData.id,
-        name: profileData.name,
-        email: profileData.email,
-        phone: profileData.phone,
-        mobile_number: profileData.mobile_number,
-        address_line1: profileData.address_line1,
-        address_line2: profileData.address_line2,
-        city: profileData.city,
-        state: profileData.state,
-        country: profileData.country,
-        pincode: profileData.pincode,
-        role: profileData.role,
-        created_at: profileData.created_at,
-        updated_at: profileData.updated_at,
+        id: data.user.id,
+        name: formData.name,
+        email: formData.email,
+        language: 'en',
+        created_at: new Date().toISOString(),
       },
     });
 
     setIsLoading(false);
-    navigate('/');
+    navigate('/'); // or welcome page
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,20 +95,20 @@ export const Login: React.FC = () => {
           <div className="hidden lg:block">
             <div className="text-center mb-8">
               <h1 className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-4">
-                Welcome Back to <span className="elegant-text text-primary">KichoFy</span>
+                Join <span className="elegant-text text-primary">KichoFy</span>
               </h1>
               <p className="text-gray-600 dark:text-gray-400 text-lg">
-                Continue your fashion journey with us
+                Start your fashion journey today
               </p>
             </div>
             <img
-              src="https://images.pexels.com/photos/9503741/pexels-photo-9503741.jpeg"
+              src="https://images.pexels.com/photos/9503741/pexels-photo-9503741.jpeg  "
               alt="Fashion"
               className="w-full h-[500px] object-cover rounded-3xl shadow-2xl"
             />
           </div>
 
-          {/* Right Side - Login Form */}
+          {/* Right Side - Signup Form */}
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 lg:p-12">
             <div className="text-center mb-8">
               <div className="lg:hidden mb-6">
@@ -117,10 +117,10 @@ export const Login: React.FC = () => {
                 </h1>
               </div>
               <h2 className="text-2xl font-heading font-bold text-gray-900 dark:text-white mb-2">
-                {t('login')} to Your Account
+                Create Your Account
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Enter your credentials to access your account
+                Sign up to explore the latest fashion trends
               </p>
             </div>
 
@@ -131,6 +131,26 @@ export const Login: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Name Field */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+              </div>
+
               {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -165,8 +185,9 @@ export const Login: React.FC = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
-                    placeholder="Enter your password"
+                    placeholder="Create a password"
                     required
+                    minLength={6}
                   />
                   <button
                     type="button"
@@ -176,16 +197,6 @@ export const Login: React.FC = () => {
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
-              </div>
-
-              {/* Forgot Password */}
-              <div className="text-right">
-                <Link
-                  to="/forgot-password"
-                  className="text-primary hover:text-primary-light text-sm font-medium transition-colors"
-                >
-                  Forgot Password?
-                </Link>
               </div>
 
               {/* Submit Button */}
@@ -198,7 +209,7 @@ export const Login: React.FC = () => {
                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    {t('login')}
+                    {t('signup')}
                     <ArrowRight className="ml-2" size={18} />
                   </>
                 )}
@@ -216,13 +227,13 @@ export const Login: React.FC = () => {
                 </div>
               </div>
 
-              {/* Social Login */}
+              {/* Social Login (optional) */}
               <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
                   className="flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" className="w-5 h-5 mr-2" />
+                  <img src="https://developers.google.com/identity/images/g-logo.png  " alt="Google" className="w-5 h-5 mr-2" />
                   <span className="text-sm font-medium">Google</span>
                 </button>
                 <button
@@ -235,15 +246,15 @@ export const Login: React.FC = () => {
               </div>
             </form>
 
-            {/* Sign Up Link */}
+            {/* Login Link */}
             <div className="text-center mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
               <p className="text-gray-600 dark:text-gray-400">
-                Don't have an account?{' '}
+                Already have an account?{' '}
                 <Link
-                  to="/signup"
+                  to="/login"
                   className="text-primary hover:text-primary-light font-medium transition-colors"
                 >
-                  {t('signup')}
+                  {t('login')}
                 </Link>
               </p>
             </div>
@@ -253,3 +264,5 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+
+

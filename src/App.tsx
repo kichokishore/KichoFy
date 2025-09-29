@@ -14,6 +14,8 @@ import { NewArrivals } from './pages/NewArrivals';
 import { BestSellers } from './pages/BestSellers';
 import { Cart } from './pages/Cart';
 import { Login } from './pages/Auth/Login';
+import { Signup } from './pages/Auth/Signup';
+import { Profile } from './pages/Profile';
 
 // CSS
 import 'react-toastify/dist/ReactToastify.css';
@@ -34,7 +36,6 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
         <Header />
         <main>
-          <Footer />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -44,11 +45,11 @@ const AppContent: React.FC = () => {
             <Route path="/best-sellers" element={<BestSellers />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Login />} />
-            
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/profile" element={<Profile />} />
+
             {/* Placeholder routes - would be implemented in full version */}
             <Route path="/orders" element={<div className="py-20 text-center">Orders page coming soon...</div>} />
-            <Route path="/profile" element={<div className="py-20 text-center">Profile page coming soon...</div>} />
             <Route path="/payments" element={<div className="py-20 text-center">Payments page coming soon...</div>} />
             <Route path="/product/:id" element={<div className="py-20 text-center">Product details coming soon...</div>} />
           </Routes>

@@ -1,12 +1,15 @@
+// src/contexts/AppContext.tsx
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { User, Product, CartItem, Order } from '../types';
+
+export type Language = 'en' | 'ta' | 'hi' | 'te';
 
 interface AppState {
   user: User | null;
   cart: CartItem[];
   orders: Order[];
   darkMode: boolean;
-  language: 'en' | 'ta' | 'hi' | 'te';
+  language: Language;
   isLoading: boolean;
 }
 
@@ -18,7 +21,7 @@ type AppAction =
   | { type: 'CLEAR_CART' }
   | { type: 'ADD_ORDER'; payload: Order }
   | { type: 'TOGGLE_DARK_MODE' }
-  | { type: 'SET_LANGUAGE'; payload: 'en' | 'ta' | 'hi' | 'te' }
+  | { type: 'SET_LANGUAGE'; payload: Language }
   | { type: 'SET_LOADING'; payload: boolean };
 
 const initialState: AppState = {
@@ -67,8 +70,14 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'ADD_ORDER':
       return { ...state, orders: [...state.orders, action.payload] };
     case 'TOGGLE_DARK_MODE':
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('darkMode', String(!state.darkMode));
+      }
       return { ...state, darkMode: !state.darkMode };
     case 'SET_LANGUAGE':
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('language', action.payload);
+      }
       return { ...state, language: action.payload };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
@@ -91,7 +100,26 @@ export const useApp = () => {
 };
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+  const getInitialDarkMode = () => {
+    if (typeof window === 'undefined') return false;
+    const saved = localStorage.getItem('darkMode');
+    return saved === 'true';
+  };
+
+  const getInitialLanguage = (): Language => {
+    if (typeof window === 'undefined') return 'en';
+    const saved = localStorage.getItem('language');
+    if (saved === 'en' || saved === 'ta' || saved === 'hi' || saved === 'te') {
+      return saved as Language;
+    }
+    return 'en';
+  };
+
+  const [state, dispatch] = useReducer(appReducer, {
+    ...initialState,
+    darkMode: getInitialDarkMode(),
+    language: getInitialLanguage(),
+  });
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

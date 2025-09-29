@@ -1,11 +1,18 @@
 export interface User {
   id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  language: 'en' | 'ta' | 'hi' | 'te';
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  mobile_number: string | null;        // 👈 new field from your schema
+  address_line1: string | null;        // 👈 split address (better than single "address")
+  address_line2: string | null;        // 👈
+  city: string | null;                 // 👈
+  state: string | null;                // 👈
+  country: string | null;              // 👈
+  pincode: string | null;              // 👈
+  role: string | null;                 // e.g., 'customer'
   created_at: string;
+  updated_at: string | null;
 }
 
 export interface Product {

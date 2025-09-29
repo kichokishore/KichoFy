@@ -29,11 +29,11 @@ export const translations = {
     loading: 'Loading...',
     
     // Home page
-    heroTitle: 'Discover Your Perfect Style',
-    heroSubtitle: 'Curated fashion for the modern woman',
+    heroTitle: 'KichoFy - Your Perfect Style Awaits',
+    heroSubtitle: "Where Tamil 'அழகு' Shines",
     shopNow: 'Shop Now',
     featuredProducts: 'Featured Products',
-    newCollection: 'New Collection',
+    newCollection: 'Cart',
     
     // Product
     size: 'Size',

@@ -131,7 +131,7 @@ export const products: Product[] = [
     name: 'Cotton Salwar Suit',
     description: 'Comfortable cotton salwar suit for daily wear',
     price: 699,
-    category: 'ethnic',
+    category: 'traditional',
     subcategory: 'suits',
     stock: 35,
     image_url: 'https://images.pexels.com/photos/9503749/pexels-photo-9503749.jpeg',
@@ -145,8 +145,9 @@ export const products: Product[] = [
 ];
 
 export const categories = [
-  { id: 'ethnic', name: 'Ethnic Wear', image: 'https://images.pexels.com/photos/9503741/pexels-photo-9503741.jpeg' },
+  { id: 'traditional', name: 'Traditional', image: 'https://images.pexels.com/photos/9503741/pexels-photo-9503741.jpeg' },
   { id: 'western', name: 'Western Wear', image: 'https://images.pexels.com/photos/9503744/pexels-photo-9503744.jpeg' },
-  { id: 'accessories', name: 'Accessories', image: 'https://images.pexels.com/photos/9503750/pexels-photo-9503750.jpeg' },
-  { id: 'footwear', name: 'Footwear', image: 'https://images.pexels.com/photos/9503751/pexels-photo-9503751.jpeg' }
+  { id: 'accessories', name: 'Fashion', image: 'https://images.pexels.com/photos/9503750/pexels-photo-9503750.jpeg' },
+  { id: 'footwear', name: 'Pants', image: 'https://images.pexels.com/photos/9503751/pexels-photo-9503751.jpeg' },
+  { id: 'handmade', name: 'Hand Made', image: 'https://images.pexels.com/photos/9503751/pexels-photo-9503751.jpeg' }
 ];
