@@ -16,7 +16,7 @@ export const Footer: React.FC = () => {
               <span className="elegant-text text-3xl">KichoFy</span>
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Discover your perfect style with our curated collection of women's fashion. 
+              Discover your perfect style with our curated collection of women's fashion.
               From ethnic to western wear, we bring you the latest trends and timeless classics.
             </p>
             <div className="flex space-x-4">
@@ -119,25 +119,26 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Newsletter */}
         <div className="border-t border-gray-800 mt-8 pt-8">
-          <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h4 className="text-lg font-semibold mb-2">Stay Updated</h4>
               <p className="text-gray-400 text-sm">Subscribe to get special offers and updates</p>
             </div>
-            <div className="flex w-full md:w-auto max-w-md">
+
+            <div className="flex flex-col sm:flex-row w-full max-w-md">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
-              <button className="px-6 py-2 bg-primary hover:bg-primary-light transition-colors rounded-r-lg font-medium">
+              <button className="px-6 py-2 mt-2 sm:mt-0 bg-primary hover:bg-primary-light transition-colors rounded-b-lg sm:rounded-l-none sm:rounded-r-lg font-medium">
                 Subscribe
               </button>
             </div>
           </div>
         </div>
+
 
         {/* Copyright */}
         <div className="border-t border-gray-800 mt-8 pt-6 text-center">

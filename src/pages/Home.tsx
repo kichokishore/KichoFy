@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Star, TrendingUp, Award, Truck } from 'lucide-react';
 import { ProductCard } from '../components/UI/ProductCard';
 import { products, categories } from '../data/products';
+import llg3 from '../assets/llg3.png';
 import { useTranslation } from '../hooks/useTranslation';
 
 export const Home: React.FC = () => {
@@ -15,7 +16,9 @@ export const Home: React.FC = () => {
   return (
     <div className="animate-fadeIn">
       {/* Hero Section */}
-      <section className="bg-[url('assets/llg3.png')] relative bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden"
+      style={{ backgroundImage: `url(${llg3})`}}
+      >
         <div className="container mx-auto px-4 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8 animate-slideIn">
