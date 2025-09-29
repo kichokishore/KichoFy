@@ -34,6 +34,7 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
         <Header />
         <main>
+          <Footer />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
