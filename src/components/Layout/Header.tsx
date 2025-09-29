@@ -54,10 +54,9 @@ export const Header: React.FC = () => {
                 className="flex items-center space-x-1 hover:text-primary transition-colors"
               >
                 <Globe size={16} />
-                <span>{languages.find(lang => lang.code === state.language)?.flag}</span>
               </button>
               {isLanguageDropdownOpen && (
-                <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 min-w-[120px]">
+                <div className="absolute left-px mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 min-w-[120px] z-50">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
@@ -66,7 +65,6 @@ export const Header: React.FC = () => {
                         state.language === lang.code ? 'bg-gray-100 dark:bg-gray-700' : ''
                       }`}
                     >
-                      <span>{lang.flag}</span>
                       <span>{lang.name}</span>
                     </button>
                   ))}

@@ -62,7 +62,7 @@ export const Collections: React.FC = () => {
               </p>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 flex-wrap gap-y-3">
               {/* View Mode Toggle */}
               <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
