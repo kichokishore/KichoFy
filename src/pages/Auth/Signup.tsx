@@ -64,7 +64,7 @@ export const Signup: React.FC = () => {
       return;
     }
 
-    // Step 3: Set user in context
+    // Step 4: Set user in context
     dispatch({
       type: 'SET_USER',
       payload: {
@@ -86,6 +86,7 @@ export const Signup: React.FC = () => {
       [e.target.name]: e.target.value,
     });
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center py-12">
@@ -264,5 +265,3 @@ export const Signup: React.FC = () => {
     </div>
   );
 };
-
-

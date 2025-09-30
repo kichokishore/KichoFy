@@ -4,6 +4,12 @@ import { User, Product, CartItem, Order } from '../types';
 
 export type Language = 'en' | 'ta' | 'hi' | 'te';
 
+interface Notification {
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
+  show: boolean;
+}
+
 interface AppState {
   user: User | null;
   cart: CartItem[];
@@ -11,6 +17,7 @@ interface AppState {
   darkMode: boolean;
   language: Language;
   isLoading: boolean;
+  notification: Notification;
 }
 
 type AppAction =
@@ -22,7 +29,9 @@ type AppAction =
   | { type: 'ADD_ORDER'; payload: Order }
   | { type: 'TOGGLE_DARK_MODE' }
   | { type: 'SET_LANGUAGE'; payload: Language }
-  | { type: 'SET_LOADING'; payload: boolean };
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_NOTIFICATION'; payload: Notification }
+  | { type: 'CLEAR_NOTIFICATION' };
 
 const initialState: AppState = {
   user: null,
@@ -31,6 +40,11 @@ const initialState: AppState = {
   darkMode: false,
   language: 'en',
   isLoading: false,
+  notification: {
+    type: 'info',
+    message: '',
+    show: false
+  },
 };
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
@@ -81,6 +95,16 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, language: action.payload };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
+    case 'SET_NOTIFICATION':
+      return { ...state, notification: action.payload };
+    case 'CLEAR_NOTIFICATION':
+      return { 
+        ...state, 
+        notification: {
+          ...state.notification,
+          show: false
+        }
+      };
     default:
       return state;
   }

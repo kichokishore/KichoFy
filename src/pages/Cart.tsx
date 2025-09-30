@@ -178,7 +178,7 @@ export const Cart: React.FC = () => {
               </div>
 
               <Link
-                to="/payments"
+                to="/checkout"
                 className="w-full bg-primary hover:bg-primary-light text-white py-3 rounded-full font-semibold transition-colors text-center block mb-4"
               >
                 {t('proceedToCheckout')}

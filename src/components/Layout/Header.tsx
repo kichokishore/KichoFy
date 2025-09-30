@@ -23,7 +23,7 @@ export const Header: React.FC = () => {
     { path: '/about', label: t('about') },
     { path: '/new-arrivals', label: t('newArrivals') },
     { path: '/collections', label: t('collections') },
-    { path: '/best-sellers', label: t('bestSellers') },
+    { path: '/orders', label: t('Orders') },
   ];
 
   const toggleDarkMode = () => {
@@ -61,9 +61,8 @@ export const Header: React.FC = () => {
                     <button
                       key={lang.code}
                       onClick={() => changeLanguage(lang.code as any)}
-                      className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 ${
-                        state.language === lang.code ? 'bg-gray-100 dark:bg-gray-700' : ''
-                      }`}
+                      className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 ${state.language === lang.code ? 'bg-gray-100 dark:bg-gray-700' : ''
+                        }`}
                     >
                       <span>{lang.name}</span>
                     </button>
@@ -71,7 +70,7 @@ export const Header: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
@@ -95,11 +94,10 @@ export const Header: React.FC = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`font-medium transition-colors hover:text-primary relative ${
-                  location.pathname === item.path
+                className={`font-medium transition-colors hover:text-primary relative ${location.pathname === item.path
                     ? 'text-primary'
                     : 'text-gray-700 dark:text-gray-300'
-                }`}
+                  }`}
               >
                 {item.label}
                 {location.pathname === item.path && (
@@ -134,7 +132,7 @@ export const Header: React.FC = () => {
                 </span>
               )}
             </Link>
-            
+
             <Link
               to={state.user ? "/profile" : "/login"}
               className="hover:text-primary transition-colors"
@@ -174,16 +172,15 @@ export const Header: React.FC = () => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`block py-2 px-4 rounded-lg transition-colors ${
-                  location.pathname === item.path
+                className={`block py-2 px-4 rounded-lg transition-colors ${location.pathname === item.path
                     ? 'bg-primary text-white'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+                  }`}
               >
                 {item.label}
               </Link>
             ))}
-            
+
             {/* Mobile User Actions */}
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
               <Link
@@ -194,7 +191,7 @@ export const Header: React.FC = () => {
                 <ShoppingCart size={18} />
                 <span>{t('cart')} ({cartItemsCount})</span>
               </Link>
-              
+
               <Link
                 to={state.user ? "/profile" : "/login"}
                 onClick={() => setIsMobileMenuOpen(false)}

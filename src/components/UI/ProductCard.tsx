@@ -52,19 +52,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, className = '
         />
         
         {/* Badges */}
-        <div className="absolute top-4 left-4 flex flex-col space-y-2">
+        <div className="absolute bottom-4 left-4 flex gap-2">
           {product.is_new && (
-            <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+            <span className="bg-gray-500/60 text-white text-xs px-2 py-1 rounded-full font-medium">
               NEW
             </span>
           )}
           {discount > 0 && (
-            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+            <span className="bg-gray-500/50 text-white text-xs px-2 py-1 rounded-full font-medium">
               -{discount}%
             </span>
           )}
           {product.is_best_seller && (
-            <span className="bg-primary text-white text-xs px-2 py-1 rounded-full font-medium">
+            <span className="bg-gray-500/60 text-white text-xs px-2 py-1 rounded-full font-medium">
               BESTSELLER
             </span>
           )}
@@ -139,20 +139,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, className = '
           
           <button
             onClick={addToCart}
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-light transition-colors text-sm font-medium"
+            className="bg-primary text-white px-3 py-2 rounded-lg hover:bg-primary-light transition-colors text-sm font-medium"
           >
             {t('addToCart')}
           </button>
         </div>
 
-        {/* Stock Status */}
-        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <span className={`text-xs font-medium ${
-            product.stock > 0 ? 'text-green-600' : 'text-red-600'
-          }`}>
-            {product.stock > 0 ? `${t('inStock')} (${product.stock})` : t('outOfStock')}
-          </span>
-        </div>
       </div>
     </div>
   );

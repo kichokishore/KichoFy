@@ -5,6 +5,7 @@ import { AppProvider, useApp } from './contexts/AppContext';
 import { Header } from './components/Layout/Header';
 import { Footer } from './components/Layout/Footer';
 import { BackToTop } from './components/Layout/BackToTop';
+import { FloatingAdminIcon } from './components/Layout/FloatingAdminIcon';
 
 // Pages
 import { Home } from './pages/Home';
@@ -16,6 +17,12 @@ import { Cart } from './pages/Cart';
 import { Login } from './pages/Auth/Login';
 import { Signup } from './pages/Auth/Signup';
 import { Profile } from './pages/Profile';
+import { CMS } from './pages/Admin/CMS';
+import { ProductDetails } from './pages/ProductDetails';
+import { OrderConfirmation } from './pages/OrderConfirmation';
+import { Checkout } from './pages/Checkout';
+import { Orders } from './pages/Orders';
+import { Notification } from './components/Notification';
 
 // CSS
 import 'react-toastify/dist/ReactToastify.css';
@@ -47,15 +54,19 @@ const AppContent: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/admin/cms" element={<CMS />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+            <Route path='/orders' element={<Orders />} />
 
-            {/* Placeholder routes - would be implemented in full version */}
-            <Route path="/orders" element={<div className="py-20 text-center">Orders page coming soon...</div>} />
-            <Route path="/payments" element={<div className="py-20 text-center">Payments page coming soon...</div>} />
-            <Route path="/product/:id" element={<div className="py-20 text-center">Product details coming soon...</div>} />
           </Routes>
         </main>
         <Footer />
         <BackToTop />
+
+        <FloatingAdminIcon />
+
         <ToastContainer
           position="bottom-right"
           autoClose={3000}
@@ -76,6 +87,9 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AppProvider>
+      <div className="App">
+        <Notification />
+      </div>
       <AppContent />
     </AppProvider>
   );
