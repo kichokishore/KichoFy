@@ -102,7 +102,7 @@ export const Login: React.FC = () => {
               </p>
             </div>
             <img
-              src="https://images.pexels.com/photos/9503741/pexels-photo-9503741.jpeg"
+              src="https://moaracrochet.com/wp-content/uploads/2021/03/Crochet-Patterns-designed-by-Moara-Crochet-768x512.jpg"
               alt="Fashion"
               className="w-full h-[500px] object-cover rounded-3xl shadow-2xl"
             />

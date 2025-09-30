@@ -6,6 +6,7 @@ import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import llg3 from '../assets/llg3.png';
 import { useTranslation } from '../hooks/useTranslation';
+import { HandMadeSection } from '../components/HandMadeSection';
 
 export const Home: React.FC = () => {
   const { t } = useTranslation();
@@ -117,7 +118,7 @@ export const Home: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-4">
-              Traditional wears
+              Categories
             </h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Rooted in culture, rising with confidence            
@@ -147,6 +148,8 @@ export const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <HandMadeSection />
 
       {/* Featured Products */}
       <section className="py-20 bg-white dark:bg-gray-900">
