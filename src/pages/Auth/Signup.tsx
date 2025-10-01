@@ -39,6 +39,12 @@ export const Signup: React.FC = () => {
     try {
       console.log('Starting signup process for:', formData.email);
 
+      // Get current URL dynamically (works for both localhost and production)
+      const currentUrl = window.location.origin;
+      const redirectUrl = `${currentUrl}/auth/callback`;
+
+      console.log('Using redirect URL:', redirectUrl);
+
       // Step 1: Create user in Supabase Auth with email confirmation
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -47,7 +53,7 @@ export const Signup: React.FC = () => {
           data: {
             name: formData.name,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: redirectUrl,
         },
       });
 
