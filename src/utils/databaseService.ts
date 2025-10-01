@@ -113,7 +113,7 @@ export const productsService = {
 
       const results = await Promise.all(updatePromises);
       const errors = results.filter(result => result.error);
-      
+
       if (errors.length > 0) {
         throw new Error(`Failed to update ${errors.length} products`);
       }
@@ -211,7 +211,27 @@ export const ordersService = {
           *,
           order_items (
             *,
-            products (*)
+            products (
+              id,
+              name,
+              description,
+              price,
+              original_price,
+              category_id,
+              subcategory,
+              stock,
+              image_url,
+              images,
+              sizes,
+              colors,
+              tags,
+              rating,
+              reviews,
+              is_new,
+              is_best_seller,
+              created_at,
+              updated_at
+            )
           ),
           profiles!user_id (
             id,
@@ -239,12 +259,12 @@ export const ordersService = {
       }
 
       const { data, error } = await query;
-      
+
       if (error) {
         console.error('Error fetching orders:', error);
         throw error;
       }
-      
+
       return data as Order[] || [];
     } catch (error) {
       console.error('Failed to fetch orders:', error);
@@ -261,7 +281,27 @@ export const ordersService = {
           *,
           order_items (
             *,
-            products (*)
+            products (
+              id,
+              name,
+              description,
+              price,
+              original_price,
+              category_id,
+              subcategory,
+              stock,
+              image_url,
+              images,
+              sizes,
+              colors,
+              tags,
+              rating,
+              reviews,
+              is_new,
+              is_best_seller,
+              created_at,
+              updated_at
+            )
           )
         `)
         .eq('user_id', userId)
@@ -284,7 +324,27 @@ export const ordersService = {
           *,
           order_items (
             *,
-            products (*)
+            products (
+              id,
+              name,
+              description,
+              price,
+              original_price,
+              category_id,
+              subcategory,
+              stock,
+              image_url,
+              images,
+              sizes,
+              colors,
+              tags,
+              rating,
+              reviews,
+              is_new,
+              is_best_seller,
+              created_at,
+              updated_at
+            )
           ),
           profiles!user_id (
             id,
@@ -319,6 +379,8 @@ export const ordersService = {
   async createOrder(orderData: {
     user_id: string;
     total_amount: number;
+    status?: string;
+    payment_status?: string;
     items: Array<{
       product_id: string;
       quantity: number;
@@ -333,8 +395,8 @@ export const ordersService = {
         .insert([{
           user_id: orderData.user_id,
           total_amount: orderData.total_amount,
-          status: 'pending',
-          payment_status: 'pending'
+          status: orderData.status || 'pending',
+          payment_status: orderData.payment_status || 'pending'
         }])
         .select()
         .single();
@@ -357,7 +419,7 @@ export const ordersService = {
 
       if (itemsError) throw itemsError;
 
-      // Return the complete order with items
+      // Return the complete order with items and product details
       return this.getOrder(order.id);
     } catch (error) {
       console.error('Error creating order:', error);
@@ -370,9 +432,9 @@ export const ordersService = {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .update({ 
-          status, 
-          updated_at: new Date().toISOString() 
+        .update({
+          status,
+          updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
         .select()
@@ -391,9 +453,9 @@ export const ordersService = {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .update({ 
-          payment_status: paymentStatus, 
-          updated_at: new Date().toISOString() 
+        .update({
+          payment_status: paymentStatus,
+          updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
         .select()
@@ -412,9 +474,9 @@ export const ordersService = {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .update({ 
-          ...updates, 
-          updated_at: new Date().toISOString() 
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
         .select()
@@ -446,6 +508,8 @@ export const ordersService = {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      return { success: true, message: 'Order deleted successfully' };
     } catch (error) {
       console.error('Error deleting order:', error);
       throw error;
@@ -461,7 +525,27 @@ export const ordersService = {
           *,
           order_items (
             *,
-            products (*)
+            products (
+              id,
+              name,
+              description,
+              price,
+              original_price,
+              category_id,
+              subcategory,
+              stock,
+              image_url,
+              images,
+              sizes,
+              colors,
+              tags,
+              rating,
+              reviews,
+              is_new,
+              is_best_seller,
+              created_at,
+              updated_at
+            )
           ),
           profiles!user_id (
             id,
@@ -488,6 +572,185 @@ export const ordersService = {
       return data as Order[] || [];
     } catch (error) {
       console.error('Error fetching orders by status:', error);
+      return [];
+    }
+  },
+
+  // Get orders by payment status
+  async getOrdersByPaymentStatus(paymentStatus: string) {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            *,
+            products (
+              id,
+              name,
+              description,
+              price,
+              original_price,
+              category_id,
+              subcategory,
+              stock,
+              image_url,
+              images,
+              sizes,
+              colors,
+              tags,
+              rating,
+              reviews,
+              is_new,
+              is_best_seller,
+              created_at,
+              updated_at
+            )
+          ),
+          profiles!user_id (
+            id,
+            name,
+            email,
+            phone,
+            mobile_number,
+            address_line1,
+            address_line2,
+            city,
+            state,
+            country,
+            pincode,
+            role,
+            created_at,
+            updated_at,
+            avatar_url
+          )
+        `)
+        .eq('payment_status', paymentStatus)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Order[] || [];
+    } catch (error) {
+      console.error('Error fetching orders by payment status:', error);
+      return [];
+    }
+  },
+
+  // Get recent orders (for dashboard)
+  async getRecentOrders(limit: number = 10) {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            *,
+            products (
+              id,
+              name,
+              image_url
+            )
+          ),
+          profiles!user_id (
+            id,
+            name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data as Order[] || [];
+    } catch (error) {
+      console.error('Error fetching recent orders:', error);
+      return [];
+    }
+  },
+
+  // Get order statistics
+  async getOrderStats() {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('status, total_amount');
+
+      if (error) throw error;
+
+      const stats = {
+        total: data?.length || 0,
+        totalRevenue: data?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0,
+        byStatus: {} as Record<string, number>
+      };
+
+      data?.forEach(order => {
+        stats.byStatus[order.status] = (stats.byStatus[order.status] || 0) + 1;
+      });
+
+      return stats;
+    } catch (error) {
+      console.error('Error fetching order stats:', error);
+      return {
+        total: 0,
+        totalRevenue: 0,
+        byStatus: {}
+      };
+    }
+  },
+
+  // Search orders by various criteria
+  async searchOrders(searchTerm: string, filters: {
+    status?: string;
+    paymentStatus?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  } = {}) {
+    try {
+      let query = supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            *,
+            products (
+              id,
+              name,
+              description,
+              price,
+              image_url
+            )
+          ),
+          profiles!user_id (
+            id,
+            name,
+            email,
+            phone
+          )
+        `)
+        .or(`id.ilike.%${searchTerm}%,profiles.name.ilike.%${searchTerm}%,profiles.email.ilike.%${searchTerm}%`);
+
+      // Apply filters
+      if (filters.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters.paymentStatus) {
+        query = query.eq('payment_status', filters.paymentStatus);
+      }
+      if (filters.dateFrom) {
+        query = query.gte('created_at', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        query = query.lte('created_at', filters.dateTo);
+      }
+
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data as Order[] || [];
+    } catch (error) {
+      console.error('Error searching orders:', error);
       return [];
     }
   }
@@ -576,12 +839,12 @@ export const usersService = {
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) {
         console.error('Error fetching users:', error);
         throw error;
       }
-      
+
       return data as User[] || [];
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -596,7 +859,7 @@ export const usersService = {
         .select('*')
         .eq('id', userId)
         .single();
-      
+
       if (error) throw error;
       return data as User;
     } catch (error) {
@@ -609,14 +872,14 @@ export const usersService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .update({ 
-          role, 
-          updated_at: new Date().toISOString() 
+        .update({
+          role,
+          updated_at: new Date().toISOString()
         })
         .eq('id', userId)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
@@ -629,14 +892,14 @@ export const usersService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .update({ 
-          ...updates, 
-          updated_at: new Date().toISOString() 
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
         })
         .eq('id', userId)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data as User;
     } catch (error) {
@@ -682,17 +945,17 @@ export const analyticsService = {
       const { data: products, error: productsError } = await supabase
         .from('products')
         .select('id, stock, created_at');
-      
+
       // Get total users
       const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select('id, created_at');
-      
+
       // Get total orders and revenue
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('id, total_amount, status, created_at');
-      
+
       // Get average rating
       const { data: reviews, error: reviewsError } = await supabase
         .from('reviews')
@@ -715,7 +978,7 @@ export const analyticsService = {
       const totalProducts = products?.length || 0;
       const totalUsers = users?.length || 0;
       const totalOrders = orders?.length || 0;
-      
+
       // Calculate total revenue from completed orders
       const totalRevenue = orders
         ?.filter(order => order.status === 'completed')
@@ -731,19 +994,19 @@ export const analyticsService = {
       const now = new Date();
       const currentMonthOrders = orders?.filter(order => {
         const orderDate = new Date(order.created_at);
-        return orderDate.getMonth() === now.getMonth() && 
-               orderDate.getFullYear() === now.getFullYear();
+        return orderDate.getMonth() === now.getMonth() &&
+          orderDate.getFullYear() === now.getFullYear();
       }).length || 0;
 
       const previousMonthOrders = orders?.filter(order => {
         const orderDate = new Date(order.created_at);
         const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
         const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-        return orderDate.getMonth() === prevMonth && 
-               orderDate.getFullYear() === prevYear;
+        return orderDate.getMonth() === prevMonth &&
+          orderDate.getFullYear() === prevYear;
       }).length || 0;
 
-      const monthlyGrowth = previousMonthOrders > 0 
+      const monthlyGrowth = previousMonthOrders > 0
         ? Math.round(((currentMonthOrders - previousMonthOrders) / previousMonthOrders) * 100)
         : currentMonthOrders > 0 ? 100 : 0;
 
@@ -869,7 +1132,7 @@ export const analyticsService = {
         .limit(limit);
 
       if (error) throw error;
-      
+
       // Aggregate quantities and return unique products
       const productMap = new Map();
       data?.forEach(item => {
@@ -948,7 +1211,7 @@ export const settingsService = {
         .from('store_settings')
         .select('*')
         .single();
-      
+
       if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
         throw error;
       }
@@ -966,7 +1229,7 @@ export const settingsService = {
         .upsert([settings])
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
@@ -981,7 +1244,7 @@ export const settingsService = {
         .from('email_settings')
         .select('*')
         .single();
-      
+
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
@@ -999,7 +1262,7 @@ export const settingsService = {
         .upsert([settings])
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     } catch (error) {

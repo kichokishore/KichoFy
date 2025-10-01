@@ -25,6 +25,7 @@ import { Orders } from './pages/Orders';
 import { Notification } from './components/Notification';
 import { AuthCallback } from './pages/Auth/AuthCallback';
 import { ScrollToTop } from './components/Layout/ScrollToTop';
+import { OrderDetails } from './pages/OrderDetails';
 
 // CSS
 import 'react-toastify/dist/ReactToastify.css';
@@ -63,6 +64,7 @@ const AppContent: React.FC = () => {
             <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
             <Route path='/orders' element={<Orders />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/order-details/:orderId" element={<OrderDetails />} />
 
           </Routes>
         </main>
