@@ -20,7 +20,7 @@ interface FormErrors {
 
 export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   
@@ -167,7 +167,46 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
     }
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload image to Supabase Storage with better error handling
+  const uploadImageToStorage = async (file: File, folder: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+    const filePath = `${folder}/${fileName}`;
+
+    console.log('Uploading file to:', filePath);
+
+    // Upload image to Supabase Storage directly
+    const { data, error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('Upload error details:', uploadError);
+      
+      // Provide more specific error messages
+      if (uploadError.message?.includes('not exist') || uploadError.message?.includes('not_found')) {
+        throw new Error('Storage bucket "product-images" does not exist. Please create it in Supabase Dashboard.');
+      } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('permission')) {
+        throw new Error('Storage bucket permissions issue. Please check bucket policies in Supabase Dashboard.');
+      } else {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath);
+
+    console.log('File uploaded successfully. Public URL:', publicUrl);
+    return publicUrl;
+  };
+
+  // Handle theme wrapper (main image) upload
+  const handleThemeWrapperUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -183,32 +222,62 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
       return;
     }
 
-    setUploading(true);
+    setUploading('theme-wrapper');
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `products/${fileName}`;
-
-      // Upload image to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
-
+      const publicUrl = await uploadImageToStorage(file, 'theme-wrappers');
+      
       // Set as main image
       setFormData(prev => ({ ...prev, image_url: publicUrl }));
       
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      alert('Failed to upload image. Please try again.');
+    } catch (error: any) {
+      console.error('Error uploading theme wrapper:', error);
+      alert(`Failed to upload theme wrapper: ${error.message}`);
     } finally {
-      setUploading(false);
+      setUploading(null);
+    }
+  };
+
+  // Handle multiple product images upload
+  const handleProductImagesUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Validate files
+    const validFiles = Array.from(files).filter(file => {
+      if (!file.type.startsWith('image/')) {
+        alert(`File "${file.name}" is not an image. Please select image files only.`);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`Image "${file.name}" is too large. Maximum size is 5MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    setUploading('product-images');
+    try {
+      const uploadPromises = validFiles.map(file => 
+        uploadImageToStorage(file, 'product-images')
+      );
+      
+      const uploadedUrls = await Promise.all(uploadPromises);
+      
+      // Add to existing images
+      setFormData(prev => ({ 
+        ...prev, 
+        images: [...prev.images, ...uploadedUrls] 
+      }));
+      
+    } catch (error: any) {
+      console.error('Error uploading product images:', error);
+      alert(`Failed to upload images: ${error.message}`);
+    } finally {
+      setUploading(null);
+      // Clear the file input
+      event.target.value = '';
     }
   };
 
@@ -288,6 +357,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
       return;
     }
 
+    // Check if we have at least one image
+    if (!formData.image_url && formData.images.length === 0) {
+      alert('Please upload at least one image for the product.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -299,7 +374,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
         category_id: formData.category_id || null,
         subcategory: formData.subcategory.trim() || null,
         stock: parseInt(formData.stock),
-        image_url: formData.image_url.trim() || null,
+        image_url: formData.image_url.trim() || (formData.images.length > 0 ? formData.images[0] : null),
         images: formData.images,
         sizes: formData.sizes,
         colors: formData.colors,
@@ -310,6 +385,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
         is_best_seller: formData.is_best_seller,
       };
 
+      console.log('Saving product data:', productData);
+
       if (product) {
         await productsService.updateProduct(product.id, productData);
       } else {
@@ -318,9 +395,17 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
 
       onSave();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving product:', error);
-      alert('Failed to save product. Please try again.');
+      
+      // Handle specific error cases
+      if (error.message?.includes('duplicate key') || error.code === '23505') {
+        alert('A product with similar details already exists. Please check the product name.');
+      } else if (error.message?.includes('foreign key') || error.code === '23503') {
+        alert('Invalid category selected. Please choose a valid category.');
+      } else {
+        alert(`Failed to save product: ${error.message || 'Unknown error'}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -507,10 +592,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
                   Media & Images
                 </h3>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  {/* Theme Wrapper Upload */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Main Image *
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      Theme Wrapper (Main Image) *
                     </label>
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row gap-3">
@@ -524,14 +610,15 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
                           }`}
                           placeholder="Enter image URL or upload file"
                         />
-                        <label className="flex items-center justify-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-light transition-colors cursor-pointer">
+                        <label className="flex items-center justify-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-light transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                           <Upload size={16} className="mr-2" />
-                          Upload
+                          {uploading === 'theme-wrapper' ? 'Uploading...' : 'Upload Theme Wrapper'}
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={handleImageUpload}
+                            onChange={handleThemeWrapperUpload}
                             className="hidden"
+                            disabled={uploading !== null}
                           />
                         </label>
                       </div>
@@ -541,15 +628,15 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
                           {errors.image_url}
                         </p>
                       )}
-                      {uploading && (
-                        <p className="text-sm text-blue-500">Uploading image...</p>
+                      {uploading === 'theme-wrapper' && (
+                        <p className="text-sm text-blue-500">Uploading theme wrapper...</p>
                       )}
                       {formData.image_url && (
                         <div className="mt-2">
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Preview:</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Theme Wrapper Preview:</p>
                           <img
                             src={formData.image_url}
-                            alt="Main product"
+                            alt="Theme wrapper"
                             className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = 'none';
@@ -560,57 +647,92 @@ export const ProductForm: React.FC<ProductFormProps> = ({ product, onClose, onSa
                     </div>
                   </div>
 
-                  {/* Additional Images */}
+                  {/* Multiple Product Images Upload */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Additional Images
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      Product Images (Multiple)
                     </label>
-                    <div className="flex flex-col sm:flex-row gap-2 mb-3">
-                      <input
-                        type="url"
-                        value={newImage}
-                        onChange={(e) => setNewImage(e.target.value)}
-                        placeholder="Add image URL"
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-lg bg-white dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      <button
-                        type="button"
-                        onClick={addImage}
-                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-light transition-colors flex items-center justify-center"
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {formData.images.map((image, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={image}
-                            alt={`Product ${index + 1}`}
-                            className="w-full h-20 sm:h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                            <div className="flex space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => setMainImage(image)}
-                                className="p-1 bg-blue-500 text-white rounded"
-                                title="Set as main"
-                              >
-                                <CheckCircle size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeImage(image)}
-                                className="p-1 bg-red-500 text-white rounded"
-                                title="Remove"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <label className="flex-1 flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-500 rounded-lg hover:border-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                          <div className="text-center">
+                            <Upload size={24} className="mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Click to upload multiple product images
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                              Supports multiple files, max 5MB each
+                            </p>
                           </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleProductImagesUpload}
+                            className="hidden"
+                            disabled={uploading !== null}
+                          />
+                        </label>
+                      </div>
+                      {uploading === 'product-images' && (
+                        <p className="text-sm text-blue-500">Uploading product images...</p>
+                      )}
+                      
+                      {/* URL Input for Additional Images */}
+                      <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                        <input
+                          type="url"
+                          value={newImage}
+                          onChange={(e) => setNewImage(e.target.value)}
+                          placeholder="Or add image URL"
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-500 rounded-lg bg-white dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <button
+                          type="button"
+                          onClick={addImage}
+                          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-light transition-colors flex items-center justify-center"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                      
+                      {/* Image Gallery */}
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          Product Images ({formData.images.length} images)
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {formData.images.map((image, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={image}
+                                alt={`Product ${index + 1}`}
+                                className="w-full h-20 sm:h-24 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                <div className="flex space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setMainImage(image)}
+                                    className="p-1 bg-blue-500 text-white rounded"
+                                    title="Set as main"
+                                  >
+                                    <CheckCircle size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeImage(image)}
+                                    className="p-1 bg-red-500 text-white rounded"
+                                    title="Remove"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
                 </div>
