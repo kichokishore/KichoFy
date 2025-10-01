@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { supabase } from '../../utils/supabaseClient';
+import loginwrapper from '../../assets/loginwrapper.jpg';
 
 export const Login: React.FC = () => {
   const { dispatch, state } = useApp(); // ✅ Get current language
@@ -30,54 +31,115 @@ export const Login: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    });
+    try {
+      // Step 1: Attempt to sign in
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
 
-    if (authError) {
-      setError(authError.message);
+      if (authError) {
+        throw new Error(authError.message);
+      }
+
+      // Step 2: Check if email is verified
+      if (authData.user && !authData.user.email_confirmed_at) {
+        // If email is not verified, sign out the user and show error
+        await supabase.auth.signOut();
+        throw new Error(
+          'Please verify your email before logging in. Check your email inbox (including spam folder) for the verification link.'
+        );
+      }
+
+      // Step 3: Fetch full profile (only if email is verified)
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        
+        // Create profile if it doesn't exist
+        const { error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            name: authData.user.user_metadata?.name || 'User',
+            email: authData.user.email,
+            role: 'customer',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (createProfileError) {
+          console.error('Profile creation error:', createProfileError);
+          throw new Error('Failed to load user profile');
+        }
+
+        // Fetch the newly created profile
+        const { data: newProfileData, error: newProfileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (newProfileError) {
+          throw new Error('Failed to create user profile');
+        }
+
+        // Use the new profile data
+        dispatch({
+          type: 'SET_USER',
+          payload: {
+            id: authData.user.id,
+            name: authData.user.user_metadata?.name || 'User',
+            email: authData.user.email!,
+            phone: null,
+            mobile_number: null,
+            address_line1: null,
+            address_line2: null,
+            city: null,
+            state: null,
+            country: null,
+            pincode: null,
+            role: 'customer',
+            created_at: authData.user.created_at,
+            updated_at: new Date().toISOString(),
+          },
+        });
+      } else {
+        // Use existing profile data
+        dispatch({
+          type: 'SET_USER',
+          payload: {
+            id: profileData.id,
+            name: profileData.name,
+            email: profileData.email,
+            phone: profileData.phone,
+            mobile_number: profileData.mobile_number,
+            address_line1: profileData.address_line1,
+            address_line2: profileData.address_line2,
+            city: profileData.city,
+            state: profileData.state,
+            country: profileData.country,
+            pincode: profileData.pincode,
+            role: profileData.role,
+            created_at: profileData.created_at,
+            updated_at: profileData.updated_at,
+          },
+        });
+      }
+
       setIsLoading(false);
-      return;
-    }
+      navigate('/');
 
-    // Fetch full profile
-    const {data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-
-    if (profileError) {
-      console.error('Profile fetch error:', profileError);
-      setError('Failed to load user profile');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please try again.');
       setIsLoading(false);
-      return;
     }
-
-
-    dispatch({
-      type: 'SET_USER',
-      payload: {
-        id: profileData.id,
-        name: profileData.name,
-        email: profileData.email,
-        phone: profileData.phone,
-        mobile_number: profileData.mobile_number,
-        address_line1: profileData.address_line1,
-        address_line2: profileData.address_line2,
-        city: profileData.city,
-        state: profileData.state,
-        country: profileData.country,
-        pincode: profileData.pincode,
-        role: profileData.role,
-        created_at: profileData.created_at,
-        updated_at: profileData.updated_at,
-      },
-    });
-
-    setIsLoading(false);
-    navigate('/');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,6 +147,33 @@ export const Login: React.FC = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear error when user starts typing
+    if (error) setError(null);
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: formData.email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (resendError) {
+        throw new Error(resendError.message);
+      }
+
+      setError('✅ Verification email sent! Please check your inbox and spam folder.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification email.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -102,7 +191,7 @@ export const Login: React.FC = () => {
               </p>
             </div>
             <img
-              src="https://moaracrochet.com/wp-content/uploads/2021/03/Crochet-Patterns-designed-by-Moara-Crochet-768x512.jpg"
+              src={loginwrapper}
               alt="Fashion"
               className="w-full h-[500px] object-cover rounded-3xl shadow-2xl"
             />
@@ -125,8 +214,24 @@ export const Login: React.FC = () => {
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+              <div className={`mb-4 p-3 rounded-lg text-sm ${
+                error.includes('✅') 
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300'
+                  : 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+              }`}>
                 {error}
+                {error.includes('verify your email') && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={isLoading}
+                      className="text-sm bg-primary text-white px-3 py-1 rounded hover:bg-primary-light transition-colors disabled:opacity-50"
+                    >
+                      {isLoading ? 'Sending...' : 'Resend Verification Email'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -217,20 +322,13 @@ export const Login: React.FC = () => {
               </div>
 
               {/* Social Login */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center justify-center">
                 <button
                   type="button"
-                  className="flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex flex-1 items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" className="w-5 h-5 mr-2" />
                   <span className="text-sm font-medium">Google</span>
-                </button>
-                <button
-                  type="button"
-                  className="flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <div className="w-5 h-5 bg-blue-600 rounded mr-2"></div>
-                  <span className="text-sm font-medium">Facebook</span>
                 </button>
               </div>
             </form>

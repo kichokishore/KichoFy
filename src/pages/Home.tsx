@@ -57,7 +57,7 @@ export const Home: React.FC = () => {
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
                 </Link>
                 <Link
-                  to="/new-arrivals"
+                  to="/cart"
                   className="inline-flex items-center border-2 border-primary text-primary hover:bg-primary hover:text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105"
                 >
                   {t('newCollection')}
