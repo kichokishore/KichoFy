@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { Product } from '../types';
 import { productsService } from '../utils/databaseService';
+import video from '../assets/video.mp4';
+import fallback from '../assets/fallback.jpg'
 
 export const HandMadeSection: React.FC = () => {
   const [handmadeProducts, setHandmadeProducts] = useState<Product[]>([]);
@@ -32,7 +34,7 @@ export const HandMadeSection: React.FC = () => {
   return (
     <section 
       ref={sectionRef}
-      className="relative py-8 flex items-center justify-center overflow-hidden"
+      className="relative py-16 flex items-center justify-center overflow-hidden"
     >
       {/* Video Background */}
       <div className="absolute inset-0 z-0">
@@ -45,11 +47,11 @@ export const HandMadeSection: React.FC = () => {
           poster="/api/placeholder/1920/1080" // Fallback image
         >
           {/* You'll need to replace these with actual video files */}
-          <source src="\src\assets\video.mp4" type="video/mp4" />
+          <source src={video} type="video/mp4" />
           {/* <source src="/assets/video.webm" type="video/webm" /> */}
           {/* Fallback image if video doesn't load */}
           <img 
-            src="/api/placeholder/1920/1080" 
+            src={fallback} 
             alt="Handmade craftsmanship background"
             className="w-full h-full object-cover"
           />
@@ -69,7 +71,7 @@ export const HandMadeSection: React.FC = () => {
           ref={textRef}
           className="text-center text-white mb-16 transition-transform duration-100"
         >
-          <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center justify-center mb-2">
             <Sparkles className="text-amber-300 mr-3" size={28} />
             <h2 className="text-5xl md:text-7xl font-light tracking-tight">
               Hand Crafted

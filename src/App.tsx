@@ -23,6 +23,7 @@ import { OrderConfirmation } from './pages/OrderConfirmation';
 import { Checkout } from './pages/Checkout';
 import { Orders } from './pages/Orders';
 import { Notification } from './components/Notification';
+import { AuthCallback } from './pages/Auth/AuthCallback';
 
 // CSS
 import 'react-toastify/dist/ReactToastify.css';
@@ -59,6 +60,7 @@ const AppContent: React.FC = () => {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
             <Route path='/orders' element={<Orders />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
           </Routes>
         </main>
