@@ -24,6 +24,7 @@ import { Checkout } from './pages/Checkout';
 import { Orders } from './pages/Orders';
 import { Notification } from './components/Notification';
 import { AuthCallback } from './pages/Auth/AuthCallback';
+import { ScrollToTop } from './components/Layout/ScrollToTop';
 
 // CSS
 import 'react-toastify/dist/ReactToastify.css';
@@ -41,6 +42,7 @@ const AppContent: React.FC = () => {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
         <Header />
         <main>
