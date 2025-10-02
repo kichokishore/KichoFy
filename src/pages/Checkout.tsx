@@ -26,7 +26,7 @@ export const Checkout: React.FC = () => {
 
   // FIXED: Calculate subtotal correctly by multiplying price with quantity
   const subtotal = state.cart.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
-  const shipping = subtotal > 999 ? 0 : 99;
+  const shipping = subtotal > 999 ? 0 : 1;
   const total = subtotal + shipping;
 
   // Function to send order details via email
