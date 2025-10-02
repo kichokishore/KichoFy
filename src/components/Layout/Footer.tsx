@@ -5,6 +5,9 @@ import { useTranslation } from '../../hooks/useTranslation';
 
 export const Footer: React.FC = () => {
   const { t } = useTranslation();
+  const phoneNumber = "916374288038";
+  const message = "Hello! I want to order your product.";
+  const waLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
   return (
     <footer className="bg-gray-900 text-white">
@@ -20,18 +23,18 @@ export const Footer: React.FC = () => {
               From ethnic to western wear, we bring you the latest trends and timeless classics.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+              {/* <a href="#" className="text-gray-400 hover:text-primary transition-colors">
                 <Facebook size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+              </a> */}
+              <a href="https://www.instagram.com/kichofy?igsh=MTJwNXAzZWtzd3Z5cg==" target='_blank' className="text-gray-400 hover:text-primary transition-colors">
                 <Instagram size={20} />
               </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+              {/* <a href="#" className="text-gray-400 hover:text-primary transition-colors">
                 <Twitter size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-primary transition-colors">
+              </a> */}
+              {/* <a href="#" className="text-gray-400 hover:text-primary transition-colors">
                 <Youtube size={20} />
-              </a>
+              </a> */}
             </div>
           </div>
 
@@ -105,15 +108,16 @@ export const Footer: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <MapPin size={16} className="text-primary" />
-                <span className="text-gray-400 text-sm">123 Fashion Street, Mumbai, India</span>
+                <span className="text-gray-400 text-sm">Vellore district, Tamil nadu, India</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone size={16} className="text-primary" />
-                <span className="text-gray-400 text-sm">+91 98765 43210</span>
+                <span className="text-gray-400 text-sm"><a href={waLink} target='_blank'>+91 6374288038</a></span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail size={16} className="text-primary" />
-                <span className="text-gray-400 text-sm">hello@kichofy.com</span>
+
+                <span className="text-gray-400 text-sm"><a href="mailto:kichofy@gmail.com" target='_blank'>kichofy@gmail.com</a></span>
               </div>
             </div>
           </div>
