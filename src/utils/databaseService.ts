@@ -375,12 +375,14 @@ export const ordersService = {
     }
   },
 
-  // Create a new order
+  // Create a new order 
   async createOrder(orderData: {
     user_id: string;
     total_amount: number;
     status?: string;
     payment_status?: string;
+    payment_session_id?: string;
+    shipping_address?: any;
     items: Array<{
       product_id: string;
       quantity: number;
@@ -396,7 +398,11 @@ export const ordersService = {
           user_id: orderData.user_id,
           total_amount: orderData.total_amount,
           status: orderData.status || 'pending',
-          payment_status: orderData.payment_status || 'pending'
+          payment_status: orderData.payment_status || 'pending',
+          payment_session_id: orderData.payment_session_id || null,
+          shipping_address: orderData.shipping_address || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }])
         .select()
         .single();
@@ -409,8 +415,8 @@ export const ordersService = {
         product_id: item.product_id,
         quantity: item.quantity,
         price: item.price,
-        size: item.size,
-        color: item.color
+        size: item.size || null,
+        color: item.color || null
       }));
 
       const { error: itemsError } = await supabase

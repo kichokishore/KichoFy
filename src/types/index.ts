@@ -30,15 +30,28 @@ export interface Category {
   updated_at: string;
 }
 
+export interface ShippingAddress {
+  name: string;
+  street: string;
+  city: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  phone?: string;
+}
+
 export interface Order {
   id: string;
-  user_id: string;
-  status: string;
+  user_id: string | null; // nullable because of ON DELETE SET NULL
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'completed' | 'cancelled' | 'payment_review';
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded' | 'pending_verification';
+  payment_session_id?: string; // corresponds to text column
   total_amount: number;
-  payment_status: string;
+  shipping_address: ShippingAddress; // corresponds to JSONB column
   created_at: string;
   updated_at: string;
-  order_items: OrderItem[];
+  order_items?: OrderItem[]; // fetched via relation
+  profiles?: User;    
 }
 
 export interface OrderItem {
