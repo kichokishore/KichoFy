@@ -31,6 +31,33 @@ import { PaymentRecovery } from './pages/PaymentRecovery';
 // CSS
 import 'react-toastify/dist/ReactToastify.css';
 
+// const LoadingScreen: React.FC = () => {
+//   const [showSkip, setShowSkip] = React.useState(false);
+
+//   React.useEffect(() => {
+//     // Show skip button after 3 seconds
+//     const timer = setTimeout(() => setShowSkip(true), 3000);
+//     return () => clearTimeout(timer);
+//   }, []);
+
+  // return (
+  //   <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+  //     <div className="text-center">
+  //       <div className="w-16 h-16 border-4 border-t-primary border-gray-300 rounded-full animate-spin mx-auto mb-4"></div>
+  //       <p className="text-gray-600 dark:text-gray-300 text-lg font-medium mb-4">Loading KichoFy...</p>
+  //       {showSkip && (
+  //         <button
+  //           onClick={() => window.location.reload()}
+  //           className="text-primary hover:text-primary-light text-sm underline"
+  //         >
+  //           Taking too long? Click to refresh
+  //         </button>
+  //       )}
+  //     </div>
+  //   </div>
+  // );
+// };
+
 const AppContent: React.FC = () => {
   const { state } = useApp();
 
@@ -41,6 +68,11 @@ const AppContent: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [state.darkMode]);
+
+  // // Show loading screen while checking authentication
+  // if (state.isAuthChecking) {
+  //   return <LoadingScreen />;
+  // }
 
   return (
     <Router>
@@ -67,12 +99,10 @@ const AppContent: React.FC = () => {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/payment-recovery" element={<PaymentRecovery />} />
             <Route path="/order-details/:orderId" element={<OrderDetails />} />
-
           </Routes>
         </main>
         <Footer />
         <BackToTop />
-
         <FloatingAdminIcon />
 
         <ToastContainer

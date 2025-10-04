@@ -1,126 +1,145 @@
+// src/pages/Auth/AuthCallback.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../utils/supabaseClient';
 import { useApp } from '../../contexts/AppContext';
+import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 export const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
   const { dispatch } = useApp();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('Verifying your email...');
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
+    const handleCallback = async () => {
       try {
-        console.log('Auth callback triggered');
-        
-        // Get the session after email verification
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        console.log('Session data:', session);
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          throw sessionError;
-        }
+        // Get the hash from URL (contains the verification token)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const type = hashParams.get('type');
 
-        if (session?.user) {
-          console.log('User verified and logged in:', session.user.email);
-          
-          // Check if email is confirmed
-          if (!session.user.email_confirmed_at) {
-            throw new Error('Email not confirmed yet. Please check your email and click the verification link.');
-          }
+        console.log('Callback type:', type);
 
-          // Get or create user profile
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+        if (type === 'signup' || type === 'email') {
+          // Email verification callback
+          if (accessToken) {
+            // Set the session with the token
+            const { data: { session }, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: hashParams.get('refresh_token') || '',
+            });
 
-          if (profileError) {
-            console.log('Profile not found, creating one...');
-            // Create profile if it doesn't exist
-            const { error: createProfileError } = await supabase
-              .from('profiles')
-              .insert({
-                id: session.user.id,
-                name: session.user.user_metadata?.name || 'User',
-                email: session.user.email,
-                role: 'customer',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              });
-
-            if (createProfileError) {
-              console.error('Profile creation error:', createProfileError);
+            if (sessionError) {
+              throw sessionError;
             }
+
+            if (session?.user) {
+              // Fetch user profile
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+              if (!profileError && profileData) {
+                // Update context with user data
+                dispatch({
+                  type: 'SET_USER',
+                  payload: {
+                    id: profileData.id,
+                    name: profileData.name,
+                    email: profileData.email,
+                    phone: profileData.phone,
+                    mobile_number: profileData.mobile_number,
+                    address_line1: profileData.address_line1,
+                    address_line2: profileData.address_line2,
+                    city: profileData.city,
+                    state: profileData.state,
+                    country: profileData.country,
+                    pincode: profileData.pincode,
+                    role: profileData.role,
+                    created_at: profileData.created_at,
+                    updated_at: profileData.updated_at,
+                    avatar_url: profileData.avatar_url,
+                  },
+                });
+
+                setStatus('success');
+                setMessage('Email verified successfully! Redirecting to home...');
+                
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                  navigate('/');
+                }, 2000);
+              } else {
+                throw new Error('Failed to load profile');
+              }
+            }
+          } else {
+            throw new Error('No verification token found');
           }
-
-          // Set user in context
-          dispatch({
-            type: 'SET_USER',
-            payload: {
-              id: session.user.id,
-              name: session.user.user_metadata?.name || 'User',
-              email: session.user.email!,
-              language: 'en',
-              created_at: session.user.created_at,
-            },
-          });
-
-          console.log('Redirecting to home page...');
-          // Redirect to home page
-          navigate('/');
         } else {
-          setError('Email verification failed. Please try signing up again.');
+          // Not a verification callback, redirect to login
+          setStatus('error');
+          setMessage('Invalid verification link');
+          setTimeout(() => {
+            navigate('/login');
+          }, 3000);
         }
-      } catch (err: any) {
-        console.error('Auth callback error:', err);
-        setError(err.message || 'Email verification failed. Please check your email and click the verification link.');
-      } finally {
-        setLoading(false);
+      } catch (error: any) {
+        console.error('Verification error:', error);
+        setStatus('error');
+        setMessage(error.message || 'Email verification failed. Please try again or contact support.');
+        
+        setTimeout(() => {
+          navigate('/login');
+        }, 5000);
       }
     };
 
-    handleAuthCallback();
+    handleCallback();
   }, [navigate, dispatch]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Verifying your email...</p>
-        </div>
-      </div>
-    );
-  }
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+        {status === 'loading' && (
+          <>
+            <Loader className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Verifying Email
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">{message}</p>
+          </>
+        )}
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 text-center">
-          <div className="text-red-500 text-6xl mb-4">❌</div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Verification Failed</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
-          <button
-            onClick={() => navigate('/signup')}
-            className="w-full bg-primary hover:bg-primary-light text-white py-3 px-6 rounded-xl font-semibold transition-colors mb-3"
-          >
-            Try Sign Up Again
-          </button>
-          <button
-            onClick={() => navigate('/login')}
-            className="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-xl font-semibold transition-colors"
-          >
-            Go to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
+        {status === 'success' && (
+          <>
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Email Verified!
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">{message}</p>
+          </>
+        )}
 
-  return null;
+        {status === 'error' && (
+          <>
+            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Verification Failed
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{message}</p>
+            <button
+              onClick={() => navigate('/login')}
+              className="bg-primary text-white px-6 py-2 rounded-full hover:bg-primary-light transition-colors"
+            >
+              Go to Login
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
 };

@@ -1,6 +1,13 @@
 // src/contexts/AppContext.tsx
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  ReactNode
+} from 'react';
 import { User, Product, CartItem, Order } from '../types';
+import { supabase } from '../utils/supabaseClient';
 
 export type Language = 'en' | 'ta' | 'hi' | 'te';
 
@@ -18,6 +25,7 @@ interface AppState {
   language: Language;
   isLoading: boolean;
   notification: Notification;
+  isAuthChecking: boolean;
 }
 
 type AppAction =
@@ -31,7 +39,8 @@ type AppAction =
   | { type: 'SET_LANGUAGE'; payload: Language }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_NOTIFICATION'; payload: Notification }
-  | { type: 'CLEAR_NOTIFICATION' };
+  | { type: 'CLEAR_NOTIFICATION' }
+  | { type: 'SET_AUTH_CHECKING'; payload: boolean };
 
 const initialState: AppState = {
   user: null,
@@ -45,6 +54,7 @@ const initialState: AppState = {
     message: '',
     show: false
   },
+  isAuthChecking: true
 };
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
@@ -52,10 +62,11 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'SET_USER':
       return { ...state, user: action.payload };
     case 'ADD_TO_CART':
-      const existingItem = state.cart.find(item => 
-        item.product_id === action.payload.product_id &&
-        item.size === action.payload.size &&
-        item.color === action.payload.color
+      const existingItem = state.cart.find(
+        item =>
+          item.product_id === action.payload.product_id &&
+          item.size === action.payload.size &&
+          item.color === action.payload.color
       );
       if (existingItem) {
         return {
@@ -64,12 +75,15 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
             item.id === existingItem.id
               ? { ...item, quantity: item.quantity + action.payload.quantity }
               : item
-          ),
+          )
         };
       }
       return { ...state, cart: [...state.cart, action.payload] };
     case 'REMOVE_FROM_CART':
-      return { ...state, cart: state.cart.filter(item => item.id !== action.payload) };
+      return {
+        ...state,
+        cart: state.cart.filter(item => item.id !== action.payload)
+      };
     case 'UPDATE_CART_QUANTITY':
       return {
         ...state,
@@ -77,7 +91,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
           item.id === action.payload.id
             ? { ...item, quantity: action.payload.quantity }
             : item
-        ),
+        )
       };
     case 'CLEAR_CART':
       return { ...state, cart: [] };
@@ -98,13 +112,12 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'SET_NOTIFICATION':
       return { ...state, notification: action.payload };
     case 'CLEAR_NOTIFICATION':
-      return { 
-        ...state, 
-        notification: {
-          ...state.notification,
-          show: false
-        }
+      return {
+        ...state,
+        notification: { ...state.notification, show: false }
       };
+    case 'SET_AUTH_CHECKING':
+      return { ...state, isAuthChecking: action.payload };
     default:
       return state;
   }
@@ -133,7 +146,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const getInitialLanguage = (): Language => {
     if (typeof window === 'undefined') return 'en';
     const saved = localStorage.getItem('language');
-    if (saved === 'en' || saved === 'ta' || saved === 'hi' || saved === 'te') {
+    if (['en', 'ta', 'hi', 'te'].includes(saved)) {
       return saved as Language;
     }
     return 'en';
@@ -142,8 +155,94 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [state, dispatch] = useReducer(appReducer, {
     ...initialState,
     darkMode: getInitialDarkMode(),
-    language: getInitialLanguage(),
+    language: getInitialLanguage()
   });
+
+  // ✅ Fetch user profile and set to state
+  const fetchAndSetProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Profile fetch error:', error);
+        return;
+      }
+
+      if (data) {
+        dispatch({
+          type: 'SET_USER',
+          payload: {
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            mobile_number: data.mobile_number,
+            address_line1: data.address_line1,
+            address_line2: data.address_line2,
+            city: data.city,
+            state: data.state,
+            country: data.country,
+            pincode: data.pincode,
+            role: data.role,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            avatar_url: data.avatar_url
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  };
+
+  // ✅ Initialize auth session and attach listener
+  useEffect(() => {
+    let mounted = true;
+
+    const initAuth = async () => {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error('Error getting session:', error);
+      }
+
+      const session = data?.session;
+      if (session?.user) {
+        await fetchAndSetProfile(session.user.id);
+      } else {
+        dispatch({ type: 'SET_USER', payload: null });
+      }
+
+      dispatch({ type: 'SET_AUTH_CHECKING', payload: false });
+
+      // Now attach auth state change listener
+      const {
+        data: { subscription }
+      } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('[Auth event]', event);
+
+        if (session?.user) {
+          await fetchAndSetProfile(session.user.id);
+        } else {
+          dispatch({ type: 'SET_USER', payload: null });
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    };
+
+    initAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

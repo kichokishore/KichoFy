@@ -3,6 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { Search, ShoppingCart, User, Menu, X, Sun, Moon, Globe } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../utils/supabaseClient';
+
 
 const languages = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -12,6 +15,7 @@ const languages = [
 ];
 
 export const Header: React.FC = () => {
+  const navigate = useNavigate();
   const { state, dispatch } = useApp();
   const { t } = useTranslation();
   const location = useLocation();
@@ -35,6 +39,13 @@ export const Header: React.FC = () => {
     dispatch({ type: 'SET_LANGUAGE', payload: langCode });
     setIsLanguageDropdownOpen(false);
   };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    dispatch({ type: 'SET_USER', payload: null });
+    navigate('/');
+  };
+
 
   const cartItemsCount = state.cart.reduce((total, item) => total + item.quantity, 0);
 
@@ -95,8 +106,8 @@ export const Header: React.FC = () => {
                 key={item.path}
                 to={item.path}
                 className={`font-medium transition-colors hover:text-primary relative ${location.pathname === item.path
-                    ? 'text-primary'
-                    : 'text-gray-700 dark:text-gray-300'
+                  ? 'text-primary'
+                  : 'text-gray-700 dark:text-gray-300'
                   }`}
               >
                 {item.label}
@@ -140,6 +151,17 @@ export const Header: React.FC = () => {
               <User size={24} />
             </Link>
 
+            {state.user && (
+              <button
+                onClick={handleLogout}
+                className="hidden lg:block text-sm text-gray-600 dark:text-gray-300 hover:text-red-500 transition-colors"
+              >
+                Logout
+              </button>
+            )}
+
+
+
             {/* Mobile Menu Button */}
             <button
               className="lg:hidden hover:text-primary transition-colors"
@@ -173,13 +195,26 @@ export const Header: React.FC = () => {
                 to={item.path}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`block py-2 px-4 rounded-lg transition-colors ${location.pathname === item.path
-                    ? 'bg-primary text-white'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-primary text-white'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
               >
                 {item.label}
               </Link>
             ))}
+
+            {state.user && (
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center space-x-2 py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-red-500"
+              >
+                <span>Logout</span>
+              </button>
+            )}
+
 
             {/* Mobile User Actions */}
             <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
