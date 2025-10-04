@@ -5,10 +5,10 @@ import { useApp } from '../../contexts/AppContext';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const languages = [
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'ta', name: 'தமிழ்', flag: '🇮🇳' },
-  { code: 'hi', name: 'हिंदी', flag: '🇮🇳' },
-  { code: 'te', name: 'తెలుగు', flag: '🇮🇳' },
+  { code: 'en', name: 'English'},
+  { code: 'ta', name: 'தமிழ்'},
+  { code: 'hi', name: 'हिंदी'},
+  { code: 'te', name: 'తెలుగు'},
 ];
 
 export const Header: React.FC = () => {
@@ -134,7 +134,7 @@ export const Header: React.FC = () => {
             </Link>
 
             <Link
-              to={state.user ? "/profile" : "/login"}
+              to={state.user ? "/profile" : "/auth/login"}
               className="hover:text-primary transition-colors"
             >
               <User size={24} />
@@ -193,7 +193,7 @@ export const Header: React.FC = () => {
               </Link>
 
               <Link
-                to={state.user ? "/profile" : "/login"}
+                to={state.user ? "/profile" : "/auth/login"}
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center space-x-2 py-2 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >

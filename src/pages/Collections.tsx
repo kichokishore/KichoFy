@@ -1,12 +1,11 @@
+// src/pages/Collections.tsx
 import React, { useState, useMemo } from 'react';
 import { Filter, Grid2x2 as Grid, List, SlidersHorizontal } from 'lucide-react';
 import { ProductCard } from '../components/UI/ProductCard';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
-import { useTranslation } from '../hooks/useTranslation';
 
 export const Collections: React.FC = () => {
-  const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('featured');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
@@ -70,7 +69,7 @@ export const Collections: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
             <div>
               <h1 className="text-3xl lg:text-4xl font-heading font-bold text-gray-900 dark:text-white">
-                {t('collections')}
+                All Collections
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-2">
                 Showing {filteredProducts.length} products
@@ -182,16 +181,44 @@ export const Collections: React.FC = () => {
               <div className="mb-6">
                 <h4 className="font-medium text-gray-900 dark:text-white mb-3">Quick Filters</h4>
                 <div className="space-y-2">
-                  <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+                  <button 
+                    onClick={() => {
+                      // Filter for new arrivals
+                      const newArrivals = allProducts.filter(p => p.is_new);
+                      // This would need to be integrated with the main filter logic
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                  >
                     New Arrivals
                   </button>
-                  <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+                  <button 
+                    onClick={() => {
+                      // Filter for best sellers
+                      const bestSellers = allProducts.filter(p => p.is_best_seller);
+                      // This would need to be integrated with the main filter logic
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                  >
                     Best Sellers
                   </button>
-                  <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+                  <button 
+                    onClick={() => {
+                      // Filter for on sale items
+                      const onSale = allProducts.filter(p => p.original_price && p.original_price > p.price);
+                      // This would need to be integrated with the main filter logic
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                  >
                     On Sale
                   </button>
-                  <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+                  <button 
+                    onClick={() => {
+                      // Filter for high rated items
+                      const highRated = allProducts.filter(p => p.rating && p.rating >= 4);
+                      // This would need to be integrated with the main filter logic
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                  >
                     High Rated
                   </button>
                 </div>
@@ -254,3 +281,5 @@ export const Collections: React.FC = () => {
     </div>
   );
 };
+
+export default Collections;

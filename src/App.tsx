@@ -1,105 +1,69 @@
+// src/App.tsx
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import { AppProvider, useApp } from './contexts/AppContext';
-import { Header } from './components/Layout/Header';
-import { Footer } from './components/Layout/Footer';
-import { BackToTop } from './components/Layout/BackToTop';
-import { FloatingAdminIcon } from './components/Layout/FloatingAdminIcon';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { AppProvider } from './contexts/AppContext';
+import { ErrorBoundary } from './components/ErrorBoundry';
+import AppContent from './components/AppContent';
 
-// Pages
-import { Home } from './pages/Home';
-import { About } from './pages/About';
-import { Collections } from './pages/Collections';
-import { NewArrivals } from './pages/NewArrivals';
-import { BestSellers } from './pages/BestSellers';
-import { Cart } from './pages/Cart';
-import { Login } from './pages/Auth/Login';
-import { Signup } from './pages/Auth/Signup';
-import { Profile } from './pages/Profile';
-import { CMS } from './pages/Admin/CMS';
-import { ProductDetails } from './pages/ProductDetails';
-import { OrderConfirmation } from './pages/OrderConfirmation';
-import { Checkout } from './pages/Checkout';
-import { Orders } from './pages/Orders';
-import { Notification } from './components/Notification';
-import { AuthCallback } from './pages/Auth/AuthCallback';
-import { ScrollToTop } from './components/Layout/ScrollToTop';
-import { OrderDetails } from './pages/OrderDetails';
-import { PaymentRecovery } from './pages/PaymentRecovery';
-
-// CSS
-import 'react-toastify/dist/ReactToastify.css';
-
-const AppContent: React.FC = () => {
-  const { state } = useApp();
-
-  useEffect(() => {
-    if (state.darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [state.darkMode]);
-
-  return (
-    <Router>
-      <ScrollToTop />
-      <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
-        <Header />
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/collections" element={<Collections />} />
-            <Route path="/collections/:category" element={<Collections />} />
-            <Route path="/new-arrivals" element={<NewArrivals />} />
-            <Route path="/best-sellers" element={<BestSellers />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/admin/cms" element={<CMS />} />
-            <Route path="/product/:id" element={<ProductDetails />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
-            <Route path='/orders' element={<Orders />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/payment-recovery" element={<PaymentRecovery />} />
-            <Route path="/order-details/:orderId" element={<OrderDetails />} />
-
-          </Routes>
-        </main>
-        <Footer />
-        <BackToTop />
-
-        <FloatingAdminIcon />
-
-        <ToastContainer
-          position="bottom-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme={state.darkMode ? 'dark' : 'light'}
-        />
-      </div>
-    </Router>
-  );
-};
+import './index.css';
+import './styles/animations.css';
+import './styles/components.css';
 
 function App() {
+  // Single useEffect for all initialization
+  useEffect(() => {
+    // Suppress web-share warnings
+    if (!navigator.share) {
+      // Silently handle missing web-share support
+    }
+
+    // Safe message handler to prevent cross-origin frame errors
+    const handleMessage = (event: MessageEvent) => {
+      const trustedOrigins = [
+        window.location.origin,
+        'https://checkout.razorpay.com',
+        'https://api.razorpay.com',
+        'https://razorpay.com'
+      ];
+
+      if (!trustedOrigins.includes(event.origin)) {
+        return;
+      }
+
+      try {
+        if (event.data && typeof event.data === 'object') {
+          if (event.data.type === 'payment-success') {
+            console.log('Payment successful message received');
+          }
+        }
+      } catch (error) {
+        console.warn('Safe message handling:', error);
+      }
+    };
+
+    const handleSecurityError = (event: SecurityPolicyViolationEvent) => {
+      console.warn('Security policy violation (safe):', event);
+    };
+
+    window.addEventListener('message', handleMessage);
+    window.addEventListener('securitypolicyviolation', handleSecurityError);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('securitypolicyviolation', handleSecurityError);
+    };
+  }, []);
+
   return (
-    <AppProvider>
-      <div className="App">
-        <Notification />
-      </div>
-      <AppContent />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <Router>
+          <div className="App">
+            <AppContent />
+          </div>
+        </Router>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -1,3 +1,4 @@
+// src/hooks/useTranslation.ts
 import { useApp } from '../contexts/AppContext';
 import { translations } from '../data/translations';
 
@@ -11,3 +12,5 @@ export const useTranslation = () => {
 
   return { t, language };
 };
+
+export default useTranslation;

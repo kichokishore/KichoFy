@@ -1,11 +1,10 @@
+// src/pages/BestSellers.tsx
 import React from 'react';
 import { Award, Star, TrendingUp, Users } from 'lucide-react';
 import { ProductCard } from '../components/UI/ProductCard';
 import { useProducts } from '../hooks/useProducts';
-import { useTranslation } from '../hooks/useTranslation';
 
 export const BestSellers: React.FC = () => {
-  const { t } = useTranslation();
   const { products: bestSellerProducts, loading: bestSellersLoading } = useProducts({ isBestSeller: true });
   const { products: allProducts, loading: allLoading } = useProducts();
 
@@ -36,7 +35,7 @@ export const BestSellers: React.FC = () => {
               </div>
             </div>
             <h1 className="text-5xl lg:text-6xl font-heading font-bold text-gray-900 dark:text-white mb-6">
-              {t('bestSellers')}
+              Best Sellers
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
               Customer favorites that have earned their place at the top. These timeless pieces 
@@ -226,3 +225,5 @@ export const BestSellers: React.FC = () => {
     </div>
   );
 };
+
+export default BestSellers;

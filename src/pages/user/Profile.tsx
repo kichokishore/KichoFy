@@ -1,3 +1,4 @@
+// src/pages/user/Profile.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -13,8 +14,13 @@ import {
   FiHash as Hash,
   FiUpload as UploadIcon
 } from 'react-icons/fi';
-import { useApp } from '../contexts/AppContext';
-import { supabase } from '../utils/supabaseClient';
+import { useApp } from '../../contexts/AppContext';
+import { supabase } from '../../utils/supabaseClient';
+import { usersService } from '../../services/databaseService';
+import { User as UserType } from '../../types';
+import { useTranslation } from '../../hooks/useTranslation';
+import { LoadingSpinner } from '../../components/UI/LoadingSpinner';
+import { Button } from '../../components/UI/Button';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -52,7 +58,9 @@ const inputVariants = {
 
 export const Profile: React.FC = () => {
   const { state, dispatch } = useApp();
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -72,7 +80,7 @@ export const Profile: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize form with user data
+  // Initialize form with user data from AppContext
   useEffect(() => {
     if (state.user) {
       setFormData({
@@ -91,41 +99,6 @@ export const Profile: React.FC = () => {
     }
   }, [state.user]);
 
-  // Fetch full profile from Supabase (on mount or ID change)
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!state.user?.id) return;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', state.user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      setFormData(prev => ({
-        ...prev,
-        name: data.name || prev.name,
-        email: data.email || prev.email,
-        phone: data.phone || prev.phone,
-        mobile_number: data.mobile_number || prev.mobile_number,
-        address_line1: data.address_line1 || prev.address_line1,
-        address_line2: data.address_line2 || prev.address_line2,
-        city: data.city || prev.city,
-        state: data.state || prev.state,
-        country: data.country || prev.country,
-        pincode: data.pincode || prev.pincode,
-      }));
-      setAvatarUrl(data.avatar_url || null);
-    };
-
-    fetchProfile();
-  }, [state.user?.id]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -137,23 +110,9 @@ export const Profile: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    // Update auth email if changed
-    if (formData.email !== state.user.email) {
-      const { error: emailError } = await supabase.auth.updateUser({ 
-        email: formData.email 
-      });
-      
-      if (emailError) {
-        setError('Failed to update email: ' + emailError.message);
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    // Update profile in database
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
+    try {
+      // Update profile using direct database service
+      const updateData = {
         name: formData.name || null,
         email: formData.email || null,
         phone: formData.phone || null,
@@ -166,36 +125,34 @@ export const Profile: React.FC = () => {
         pincode: formData.pincode || null,
         avatar_url: avatarUrl || null,
         updated_at: new Date().toISOString(),
-      })
-      .eq('id', state.user.id);
+      };
 
-    if (profileError) {
-      setError('Failed to save profile: ' + profileError.message);
+      const updatedUser = await usersService.updateUser(state.user.id, updateData);
+
+      // Update AppContext with the returned user data
+      if (updatedUser) {
+        dispatch({
+          type: 'SET_USER',
+          payload: updatedUser,
+        });
+      }
+
+      setIsEditing(false);
+      
+      // Show success notification
+      dispatch({
+        type: 'SET_NOTIFICATION',
+        payload: {
+          type: 'success',
+          message: 'Profile updated successfully',
+          show: true
+        }
+      });
+    } catch (error: any) {
+      setError('Failed to save profile: ' + error.message);
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    // Update context
-    dispatch({
-      type: 'SET_USER',
-      payload: {
-        ...state.user,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        mobile_number: formData.mobile_number,
-        address_line1: formData.address_line1,
-        address_line2: formData.address_line2,
-        city: formData.city,
-        state: formData.state,
-        country: formData.country,
-        pincode: formData.pincode,
-        avatar_url: avatarUrl,
-      },
-    });
-
-    setIsEditing(false);
-    setIsLoading(false);
   };
 
   const handleCancel = () => {
@@ -215,27 +172,33 @@ export const Profile: React.FC = () => {
       setAvatarUrl(state.user.avatar_url || null);
     }
     setIsEditing(false);
+    setError(null);
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    dispatch({ type: 'SET_USER', payload: null });
-    navigate('/login');
+    try {
+      await supabase.auth.signOut();
+      dispatch({ type: 'SET_USER', payload: null });
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      setError('Failed to logout. Please try again.');
+    }
   };
 
-  const uploadAvatar = async (file: File) => {
-    if (!state.user?.id) return;
+  const uploadAvatar = async (file: File): Promise<string | null> => {
+    if (!state.user?.id) return null;
     
     setUploading(true);
     try {
-      // Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${state.user.id}/${Math.random()}.${fileExt}`;
+      const fileName = `${state.user.id}-${Math.random()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
+      // Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
@@ -244,7 +207,21 @@ export const Profile: React.FC = () => {
         .from('avatars')
         .getPublicUrl(filePath);
 
+      // Update user profile with new avatar URL
+      await usersService.updateUser(state.user.id, { avatar_url: publicUrl });
+
+      // Update local state
       setAvatarUrl(publicUrl);
+      
+      // Update AppContext
+      dispatch({
+        type: 'SET_USER',
+        payload: {
+          ...state.user,
+          avatar_url: publicUrl
+        }
+      });
+
       return publicUrl;
     } catch (error: any) {
       setError('Failed to upload avatar: ' + error.message);
@@ -260,6 +237,12 @@ export const Profile: React.FC = () => {
     const file = e.target.files[0];
     if (!file.type.startsWith('image/')) {
       setError('Please select an image file');
+      return;
+    }
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size must be less than 5MB');
       return;
     }
     
@@ -280,15 +263,15 @@ export const Profile: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <div className="w-16 h-16 border-4 border-t-primary border-gray-300 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Loading profile...</p>
+          <LoadingSpinner size="large" />
+          <p className="text-gray-600 dark:text-gray-300 mt-4">{t('loading') || 'Loading...'}</p>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <motion.div
           variants={containerVariants}
@@ -334,42 +317,39 @@ export const Profile: React.FC = () => {
             </div>
             <div className="absolute top-6 right-6 flex space-x-3">
               {!isEditing ? (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <Button
                   onClick={() => setIsEditing(true)}
+                  variant="secondary"
                   className="flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-full hover:bg-white/30 transition-all"
                 >
                   <Edit3 className="mr-2" size={18} />
-                  Edit Profile
-                </motion.button>
+                  {t('edit') || 'Edit'} {t('profile') || 'Profile'}
+                </Button>
               ) : (
                 <div className="flex space-x-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <Button
                     onClick={handleSave}
                     disabled={isLoading || uploading}
-                    className="flex items-center px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 disabled:opacity-50"
+                    variant="primary"
+                    className="flex items-center"
                   >
                     {isLoading || uploading ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <LoadingSpinner size="small" />
                     ) : (
                       <>
                         <Save className="mr-2" size={18} />
-                        Save
+                        {t('save') || 'Save'}
                       </>
                     )}
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  </Button>
+                  <Button
                     onClick={handleCancel}
-                    className="flex items-center px-4 py-2 bg-gray-700 text-white rounded-full hover:bg-gray-800"
+                    variant="secondary"
+                    className="flex items-center"
                   >
                     <X className="mr-2" size={18} />
-                    Cancel
-                  </motion.button>
+                    {t('cancel') || 'Cancel'}
+                  </Button>
                 </div>
               )}
             </div>
@@ -388,30 +368,30 @@ export const Profile: React.FC = () => {
                       className="bg-transparent border-b-2 border-primary outline-none text-3xl font-bold text-gray-900 dark:text-white w-64"
                       whileFocus={inputVariants.focus}
                       whileBlur={inputVariants.blur}
+                      placeholder={t('name') || 'Name'}
                     />
                   ) : (
-                    state.user.name || 'User'
+                    state.user.name || (t('user') || 'User')
                   )}
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 mt-1">
-                  Customer since {new Date(state.user.created_at).getFullYear()}
+                  {t('customerSince') || 'Customer since'} {new Date(state.user.created_at || Date.now()).getFullYear()}
                 </p>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                variant="danger"
+                className="px-4 py-2"
               >
-                Logout
-              </motion.button>
+                {t('logout') || 'Logout'}
+              </Button>
             </div>
 
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg"
+                className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg dark:bg-red-900 dark:text-red-100"
               >
                 {error}
               </motion.div>
@@ -421,66 +401,67 @@ export const Profile: React.FC = () => {
               {/* Personal Information */}
               <motion.div variants={itemVariants} className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-                  <User className="mr-2 text-primary" /> Personal Information
+                  <User className="mr-2 text-primary" /> {t('personalInformation') || 'Personal Information'}
                 </h2>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('email') || 'Email'}</label>
                     {isEditing ? (
                       <motion.input
                         name="email"
                         type="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
                         whileFocus={inputVariants.focus}
                         whileBlur={inputVariants.blur}
+                        placeholder={t('email') || 'Email'}
                       />
                     ) : (
                       <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                         <Mail className="text-gray-400 mr-2" size={18} />
-                        <span>{formData.email}</span>
+                        <span className="dark:text-white">{formData.email}</span>
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('phone') || 'Phone'}</label>
                     {isEditing ? (
                       <motion.input
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
                         whileFocus={inputVariants.focus}
                         whileBlur={inputVariants.blur}
-                        placeholder="Landline"
+                        placeholder={t('phone') || 'Phone'}
                       />
                     ) : (
                       <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                         <Phone className="text-gray-400 mr-2" size={18} />
-                        <span>{formData.phone || 'Not provided'}</span>
+                        <span className="dark:text-white">{formData.phone || (t('notProvided') || 'Not provided')}</span>
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mobile</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('mobile') || 'Mobile'}</label>
                     {isEditing ? (
                       <motion.input
                         name="mobile_number"
                         value={formData.mobile_number}
                         onChange={handleInputChange}
-                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
                         whileFocus={inputVariants.focus}
                         whileBlur={inputVariants.blur}
-                        placeholder="Mobile number"
+                        placeholder={t('mobile') || 'Mobile'}
                       />
                     ) : (
                       <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                         <Phone className="text-gray-400 mr-2" size={18} />
-                        <span>{formData.mobile_number || 'Not provided'}</span>
+                        <span className="dark:text-white">{formData.mobile_number || (t('notProvided') || 'Not provided')}</span>
                       </div>
                     )}
                   </div>
@@ -490,79 +471,83 @@ export const Profile: React.FC = () => {
               {/* Address Information */}
               <motion.div variants={itemVariants} className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-                  <MapPin className="mr-2 text-primary" /> Address
+                  <MapPin className="mr-2 text-primary" /> {t('address') || 'Address'}
                 </h2>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address Line 1</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('addressLine1') || 'Address Line 1'}</label>
                     {isEditing ? (
                       <motion.input
                         name="address_line1"
                         value={formData.address_line1}
                         onChange={handleInputChange}
-                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
                         whileFocus={inputVariants.focus}
                         whileBlur={inputVariants.blur}
+                        placeholder={t('addressLine1') || 'Address Line 1'}
                       />
                     ) : (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                        {formData.address_line1 || 'Not provided'}
+                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl dark:text-white">
+                        {formData.address_line1 || (t('notProvided') || 'Not provided')}
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address Line 2</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('addressLine2') || 'Address Line 2'}</label>
                     {isEditing ? (
                       <motion.input
                         name="address_line2"
                         value={formData.address_line2}
                         onChange={handleInputChange}
-                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
                         whileFocus={inputVariants.focus}
                         whileBlur={inputVariants.blur}
+                        placeholder={t('addressLine2') || 'Address Line 2'}
                       />
                     ) : (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                        {formData.address_line2 || 'Not provided'}
+                      <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl dark:text-white">
+                        {formData.address_line2 || (t('notProvided') || 'Not provided')}
                       </div>
                     )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('city') || 'City'}</label>
                       {isEditing ? (
                         <motion.input
                           name="city"
                           value={formData.city}
                           onChange={handleInputChange}
-                          className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
                           whileFocus={inputVariants.focus}
                           whileBlur={inputVariants.blur}
+                          placeholder={t('city') || 'City'}
                         />
                       ) : (
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                          {formData.city || 'Not provided'}
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl dark:text-white">
+                          {formData.city || (t('notProvided') || 'Not provided')}
                         </div>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('state') || 'State'}</label>
                       {isEditing ? (
                         <motion.input
                           name="state"
                           value={formData.state}
                           onChange={handleInputChange}
-                          className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
                           whileFocus={inputVariants.focus}
                           whileBlur={inputVariants.blur}
+                          placeholder={t('state') || 'State'}
                         />
                       ) : (
-                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                          {formData.state || 'Not provided'}
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl dark:text-white">
+                          {formData.state || (t('notProvided') || 'Not provided')}
                         </div>
                       )}
                     </div>
@@ -570,39 +555,41 @@ export const Profile: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('country') || 'Country'}</label>
                       {isEditing ? (
                         <motion.input
                           name="country"
                           value={formData.country}
                           onChange={handleInputChange}
-                          className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
                           whileFocus={inputVariants.focus}
                           whileBlur={inputVariants.blur}
+                          placeholder={t('country') || 'Country'}
                         />
                       ) : (
                         <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <Globe className="text-gray-400 mr-2" size={18} />
-                          <span>{formData.country || 'Not provided'}</span>
+                          <span className="dark:text-white">{formData.country || (t('notProvided') || 'Not provided')}</span>
                         </div>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pincode</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('pincode') || 'Pincode'}</label>
                       {isEditing ? (
                         <motion.input
                           name="pincode"
                           value={formData.pincode}
                           onChange={handleInputChange}
-                          className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white"
                           whileFocus={inputVariants.focus}
                           whileBlur={inputVariants.blur}
+                          placeholder={t('pincode') || 'Pincode'}
                         />
                       ) : (
                         <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                           <Hash className="text-gray-400 mr-2" size={18} />
-                          <span>{formData.pincode || 'Not provided'}</span>
+                          <span className="dark:text-white">{formData.pincode || (t('notProvided') || 'Not provided')}</span>
                         </div>
                       )}
                     </div>
@@ -616,3 +603,5 @@ export const Profile: React.FC = () => {
     </div>
   );
 };
+
+export default Profile;

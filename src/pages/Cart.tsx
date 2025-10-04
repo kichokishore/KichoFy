@@ -1,28 +1,187 @@
-import React from 'react';
+// src/pages/Cart.tsx
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Minus, Plus, X, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
-import { useTranslation } from '../hooks/useTranslation';
+import { supabase } from '../utils/supabaseClient';
 
 export const Cart: React.FC = () => {
   const { state, dispatch } = useApp();
-  const { t } = useTranslation();
+  const [syncing, setSyncing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const updateQuantity = (itemId: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      dispatch({ type: 'REMOVE_FROM_CART', payload: itemId });
-    } else {
-      dispatch({ type: 'UPDATE_CART_QUANTITY', payload: { id: itemId, quantity: newQuantity } });
+  // Load cart from database on component mount
+  useEffect(() => {
+    loadCartFromDatabase();
+  }, [state.user]);
+
+  const loadCartFromDatabase = async () => {
+    if (!state.user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log('Loading cart for user:', state.user.id);
+      
+      const { data: cartItems, error } = await supabase
+        .from('cart_items')
+        .select(`
+          id,
+          quantity,
+          size,
+          color,
+          product_id,
+          products!inner(
+            id,
+            name,
+            description,
+            price,
+            original_price,
+            image_url,
+            stock
+          )
+        `)
+        .eq('user_id', state.user.id);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Cart items from database:', cartItems);
+
+      if (cartItems && cartItems.length > 0) {
+        // Transform database cart items to app cart format
+        const formattedCart = cartItems.map(item => ({
+          id: item.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          size: item.size || undefined,
+          color: item.color || undefined,
+          product: {
+            id: item.products.id,
+            name: item.products.name,
+            description: item.products.description,
+            price: item.products.price,
+            originalPrice: item.products.original_price,
+            image_url: item.products.image_url,
+            stock: item.products.stock
+          }
+        }));
+
+        console.log('Formatted cart:', formattedCart);
+        dispatch({ type: 'SET_CART', payload: formattedCart });
+      } else {
+        console.log('No cart items found for user');
+        dispatch({ type: 'SET_CART', payload: [] });
+      }
+    } catch (error) {
+      console.error('Error loading cart from database:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const removeItem = (itemId: string) => {
+  const syncCartToDatabase = async (cartItem: any, operation: 'add' | 'update' | 'remove') => {
+    if (!state.user) return;
+
+    setSyncing(true);
+    try {
+      switch (operation) {
+        case 'add':
+          const { data: newItem, error: addError } = await supabase
+            .from('cart_items')
+            .upsert({
+              user_id: state.user.id,
+              product_id: cartItem.product_id,
+              quantity: cartItem.quantity,
+              size: cartItem.size || null,
+              color: cartItem.color || null
+            }, {
+              onConflict: 'user_id,product_id,size,color'
+            })
+            .select()
+            .single();
+
+          if (addError) throw addError;
+          console.log('Item added to database:', newItem);
+          break;
+
+        case 'update':
+          const { error: updateError } = await supabase
+            .from('cart_items')
+            .update({ 
+              quantity: cartItem.quantity,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', cartItem.id)
+            .eq('user_id', state.user.id);
+
+          if (updateError) throw updateError;
+          console.log('Item updated in database:', cartItem.id);
+          break;
+
+        case 'remove':
+          const { error: deleteError } = await supabase
+            .from('cart_items')
+            .delete()
+            .eq('id', cartItem.id)
+            .eq('user_id', state.user.id);
+
+          if (deleteError) throw deleteError;
+          console.log('Item removed from database:', cartItem.id);
+          break;
+      }
+    } catch (error) {
+      console.error('Error syncing cart to database:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    const item = state.cart.find(item => item.id === itemId);
+    if (!item) return;
+
+    if (newQuantity <= 0) {
+      removeItem(itemId);
+    } else {
+      dispatch({ 
+        type: 'UPDATE_CART_QUANTITY', 
+        payload: { id: itemId, quantity: newQuantity } 
+      });
+      
+      // Sync to database
+      await syncCartToDatabase({ ...item, quantity: newQuantity }, 'update');
+    }
+  };
+
+  const removeItem = async (itemId: string) => {
+    const item = state.cart.find(item => item.id === itemId);
+    if (!item) return;
+
     dispatch({ type: 'REMOVE_FROM_CART', payload: itemId });
+    
+    // Remove from database
+    await syncCartToDatabase(item, 'remove');
   };
 
   const subtotal = state.cart.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
-  const shipping = subtotal > 999 ? 0 : 1;
+  const shipping = subtotal > 999 ? 0 : 50;
   const total = subtotal + shipping;
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading your cart...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (state.cart.length === 0) {
     return (
@@ -32,7 +191,7 @@ export const Cart: React.FC = () => {
             <ShoppingBag size={60} className="mx-auto sm:w-20 sm:h-20" />
           </div>
           <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
-            {t('emptyCart')}
+            Your cart is empty
           </h2>
           <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base mb-6 sm:mb-8">
             Looks like you haven't added any items to your cart yet. 
@@ -42,7 +201,7 @@ export const Cart: React.FC = () => {
             to="/collections"
             className="inline-flex items-center justify-center bg-primary hover:bg-primary-light text-white px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 rounded-full font-semibold transition-colors text-sm sm:text-base w-full sm:w-auto"
           >
-            {t('continueShopping')}
+            Continue Shopping
             <ArrowRight className="ml-2" size={16} />
           </Link>
         </div>
@@ -56,10 +215,11 @@ export const Cart: React.FC = () => {
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold text-gray-900 dark:text-white mb-2">
-            Shopping {t('cart')}
+            Shopping Cart
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
             {state.cart.length} {state.cart.length === 1 ? 'item' : 'items'} in your cart
+            {syncing && <span className="text-blue-500 ml-2">• Syncing...</span>}
           </p>
         </div>
 
@@ -75,9 +235,12 @@ export const Cart: React.FC = () => {
                   {/* Product Image */}
                   <div className="flex-shrink-0">
                     <img
-                      src={item.product?.image_url}
+                      src={item.product?.image_url || '/assets/fallback.jpg'}
                       alt={item.product?.name}
                       className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover rounded-lg sm:rounded-xl"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/assets/fallback.jpg';
+                      }}
                     />
                   </div>
 
@@ -106,7 +269,7 @@ export const Cart: React.FC = () => {
                       {/* Price - Mobile */}
                       <div className="xs:hidden flex items-center justify-between">
                         <div className="text-lg font-bold text-primary">
-                          ₹{item.product?.price?.toLocaleString()}
+                          ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
@@ -119,13 +282,11 @@ export const Cart: React.FC = () => {
                       {/* Price - Desktop */}
                       <div className="hidden xs:block text-right">
                         <div className="text-lg sm:text-xl font-bold text-primary">
-                          ₹{item.product?.price?.toLocaleString()}
+                          ₹{((item.product?.price || 0) * item.quantity).toLocaleString()}
                         </div>
-                        {item.product?.originalPrice && (
-                          <div className="text-sm text-gray-400 line-through">
-                            ₹{item.product.originalPrice.toLocaleString()}
-                          </div>
-                        )}
+                        <div className="text-sm text-gray-500">
+                          ₹{item.product?.price?.toLocaleString()} each
+                        </div>
                       </div>
                     </div>
 
@@ -172,7 +333,7 @@ export const Cart: React.FC = () => {
 
               <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 <div className="flex justify-between text-sm sm:text-base">
-                  <span className="text-gray-600 dark:text-gray-400">{t('subtotal')}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
                   <span className="font-semibold">₹{subtotal.toLocaleString()}</span>
                 </div>
                 
@@ -197,7 +358,7 @@ export const Cart: React.FC = () => {
 
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-3 sm:pt-4">
                   <div className="flex justify-between text-base sm:text-lg font-bold">
-                    <span>{t('total')}</span>
+                    <span>Total</span>
                     <span className="text-primary">₹{total.toLocaleString()}</span>
                   </div>
                 </div>
@@ -207,14 +368,14 @@ export const Cart: React.FC = () => {
                 to="/checkout"
                 className="w-full bg-primary hover:bg-primary-light text-white py-2.5 sm:py-3 rounded-full font-semibold transition-colors text-center block mb-3 text-sm sm:text-base"
               >
-                {t('proceedToCheckout')}
+                Proceed to Checkout
               </Link>
 
               <Link
                 to="/collections"
                 className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 py-2.5 sm:py-3 rounded-full font-semibold transition-colors text-center block text-sm sm:text-base"
               >
-                {t('continueShopping')}
+                Continue Shopping
               </Link>
 
               {/* Security Badges */}
@@ -263,3 +424,5 @@ export const Cart: React.FC = () => {
     </div>
   );
 };
+
+export default Cart;

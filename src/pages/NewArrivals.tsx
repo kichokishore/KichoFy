@@ -1,11 +1,10 @@
+// src/pages/NewArrivals.tsx
 import React from 'react';
 import { Calendar, Star, TrendingUp } from 'lucide-react';
 import { ProductCard } from '../components/UI/ProductCard';
 import { useProducts } from '../hooks/useProducts';
-import { useTranslation } from '../hooks/useTranslation';
 
 export const NewArrivals: React.FC = () => {
-  const { t } = useTranslation();
   const { products: newProducts, loading: newLoading } = useProducts({ isNew: true });
   const { products: allProducts, loading: allLoading } = useProducts();
 
@@ -36,7 +35,7 @@ export const NewArrivals: React.FC = () => {
               </div>
             </div>
             <h1 className="text-5xl lg:text-6xl font-heading font-bold text-gray-900 dark:text-white mb-6">
-              {t('newArrivals')}
+              New Arrivals
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
               Discover the latest trends and fresh styles that just landed in our collection. 
@@ -147,3 +146,5 @@ export const NewArrivals: React.FC = () => {
     </div>
   );
 };
+
+export default NewArrivals;

@@ -1,3 +1,4 @@
+// src/pages/PaymentRecovery.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
@@ -190,3 +191,5 @@ export const PaymentRecovery: React.FC = () => {
     </div>
   );
 };
+
+export default PaymentRecovery;

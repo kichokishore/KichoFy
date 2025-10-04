@@ -1,10 +1,38 @@
+// src/pages/About.tsx
 import React from 'react';
-import { Award, Users, Heart, Truck, Shield, Star } from 'lucide-react';
-import { useTranslation } from '../hooks/useTranslation';
+import { motion } from 'framer-motion';
+import { 
+  FiAward as Award,
+  FiUsers as Users,
+  FiHeart as Heart,
+  FiTruck as Truck,
+  FiShield as Shield,
+  FiStar as Star
+} from 'react-icons/fi';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut",
+    },
+  },
+};
 
 export const About: React.FC = () => {
-  const { t } = useTranslation();
-
   const values = [
     {
       icon: Heart,
@@ -39,9 +67,14 @@ export const About: React.FC = () => {
     <div className="animate-fadeIn">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-20">
-        <div className="container mx-auto px-4">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="animate-slideIn">
+            <motion.div variants={itemVariants} className="animate-slideIn">
               <h1 className="text-5xl lg:text-6xl font-heading font-bold text-gray-900 dark:text-white mb-6">
                 About <span className="elegant-text text-primary">KichoFy</span>
               </h1>
@@ -64,9 +97,9 @@ export const About: React.FC = () => {
                   <span className="text-gray-600 dark:text-gray-400">50K+ Happy Customers</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
             
-            <div className="relative">
+            <motion.div variants={itemVariants} className="relative">
               <img
                 src="https://images.pexels.com/photos/9503742/pexels-photo-9503742.jpeg"
                 alt="About KichoFy"
@@ -81,19 +114,26 @@ export const About: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Our Story */}
       <section className="py-20 bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-4">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-8">
-              Our Story
-            </h2>
-            <div className="prose prose-lg text-gray-600 dark:text-gray-400 max-w-none">
+            <motion.div variants={itemVariants}>
+              <h2 className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-8">
+                Our Story
+              </h2>
+            </motion.div>
+            <motion.div variants={itemVariants} className="prose prose-lg text-gray-600 dark:text-gray-400 max-w-none">
               <p className="mb-6 leading-relaxed">
                 KichoFy was founded in 2019 with a simple yet powerful vision: to make every woman feel 
                 beautiful, confident, and authentically herself through fashion. What started as a small 
@@ -111,27 +151,35 @@ export const About: React.FC = () => {
                 ethnic wear to contemporary western fashion. Our journey is driven by your trust, your 
                 feedback, and your continued support in helping us grow into the brand we are today.
               </p>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Our Values */}
       <section className="py-20 bg-gray-50 dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
+          <motion.div variants={itemVariants} className="text-center mb-16">
             <h2 className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-4">
               Our Values
             </h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               These principles guide everything we do, from product selection to customer service
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
-              <div
+              <motion.div
                 key={index}
+                variants={itemVariants}
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 300 }}
                 className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 text-center"
               >
                 <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -143,35 +191,49 @@ export const About: React.FC = () => {
                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                   {value.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Statistics */}
       <section className="py-20 bg-primary">
-        <div className="container mx-auto px-4">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center text-white">
+              <motion.div
+                key={index}
+                variants={itemVariants}
+                className="text-center text-white"
+              >
                 <div className="text-4xl lg:text-5xl font-bold mb-2 animate-pulse-subtle">
                   {stat.number}
                 </div>
                 <div className="text-white/90 text-lg">
                   {stat.label}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Our Promise */}
       <section className="py-20 bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-4">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
+            <motion.div variants={itemVariants}>
               <h2 className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-8">
                 Our Promise to You
               </h2>
@@ -219,9 +281,9 @@ export const About: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
               <img
                 src="https://images.pexels.com/photos/9503743/pexels-photo-9503743.jpeg"
                 alt="Our Promise 1"
@@ -232,31 +294,40 @@ export const About: React.FC = () => {
                 alt="Our Promise 2"
                 className="w-full h-64 object-cover rounded-2xl shadow-lg mt-8"
               />
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Call to Action */}
       <section className="py-20 bg-gradient-to-r from-primary to-primary-light">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-heading font-bold text-white mb-6">
-            Join Our Fashion Journey
-          </h2>
-          <p className="text-white/90 text-xl mb-8 max-w-2xl mx-auto">
-            Become part of the KichoFy community and discover fashion that celebrates your unique style
-          </p>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4 text-center"
+        >
+          <motion.div variants={itemVariants}>
+            <h2 className="text-4xl font-heading font-bold text-white mb-6">
+              Join Our Fashion Journey
+            </h2>
+            <p className="text-white/90 text-xl mb-8 max-w-2xl mx-auto">
+              Become part of the KichoFy community and discover fashion that celebrates your unique style
+            </p>
+          </motion.div>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center">
             <button className="bg-white text-primary px-8 py-4 rounded-full font-semibold hover:bg-gray-100 transition-colors">
               Start Shopping
             </button>
             <button className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-primary transition-colors">
               Join Newsletter
             </button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
     </div>
   );
 };
+
+export default About;

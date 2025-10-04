@@ -1,19 +1,48 @@
+// src/pages/Home.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Star, TrendingUp, Award, Truck } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { 
+  FiArrowRight as ArrowRight,
+  FiStar as Star,
+  FiTrendingUp as TrendingUp,
+  FiAward as Award,
+  FiTruck as Truck
+} from 'react-icons/fi';
 import { ProductCard } from '../components/UI/ProductCard';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import llg3 from '../assets/llg3.png';
-import { useTranslation } from '../hooks/useTranslation';
 import { HandMadeSection } from '../components/HandMadeSection';
+import { LoadingSpinner } from '../components/UI/LoadingSpinner';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut",
+    },
+  },
+};
 
 export const Home: React.FC = () => {
-  const { t } = useTranslation();
-  const { products: allProducts, loading: productsLoading } = useProducts();
-  const { categories, loading: categoriesLoading } = useCategories();
+  const { products: allProducts, loading: productsLoading, error: productsError } = useProducts();
+  const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
 
-  // Filter products for different sections
+  // Filter products for different sections using our service patterns
   const featuredProducts = allProducts.slice(0, 4);
   const newProducts = allProducts.filter(p => p.is_new).slice(0, 4);
   const bestSellers = allProducts.filter(p => p.is_best_seller).slice(0, 4);
@@ -22,8 +51,8 @@ export const Home: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+          <LoadingSpinner size="large" />
+          <p className="text-gray-600 dark:text-gray-300 mt-4">Loading...</p>
         </div>
       </div>
     );
@@ -36,15 +65,20 @@ export const Home: React.FC = () => {
         className="relative bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden"
         style={{ backgroundImage: `url(${llg3})` }}
       >
-        <div className="container mx-auto px-4 py-20 lg:py-32">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4 py-20 lg:py-32"
+        >
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-12">
-            <div className="space-y-8 animate-slideIn flex-1">
+            <motion.div variants={itemVariants} className="space-y-8 animate-slideIn flex-1">
               <div>
                 <h1 className="text-5xl lg:text-7xl font-heading font-bold text-white leading-tight">
-                  {t('heroTitle')}
+                  KichoFy - Your Perfect Style Awaits
                 </h1>
                 <p className="text-xl text-gray-400 dark:text-gray-400 mt-6 max-w-lg">
-                  {t('heroSubtitle')}
+                  Where Tamil 'அழகு' Shines
                 </p>
               </div>
 
@@ -53,127 +87,152 @@ export const Home: React.FC = () => {
                   to="/collections"
                   className="inline-flex items-center bg-primary hover:bg-primary-light text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg group"
                 >
-                  {t('shopNow')}
+                  Shop Now
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
                 </Link>
                 <Link
                   to="/cart"
                   className="inline-flex items-center border-2 border-primary text-primary hover:bg-primary hover:text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105"
                 >
-                  {t('newCollection')}
+                  Cart
                 </Link>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="relative flex-1">
+            <motion.div variants={itemVariants} className="relative flex-1">
               {/* Decorative Elements */}
               <div className="absolute -top-4 -right-4 w-72 h-72 bg-primary opacity-20 rounded-full blur-3xl"></div>
               <div className="absolute -bottom-8 -left-8 w-64 h-64 bg-pink-400 opacity-20 rounded-full blur-3xl"></div>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Features Section */}
       <section className="py-16 bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-4">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
           <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
-            <div className="text-center group min-w-[140px] sm:min-w-[160px]">
+            <motion.div variants={itemVariants} className="text-center group min-w-[140px] sm:min-w-[160px]">
               <div className="bg-primary/10 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:bg-primary/20 transition-colors">
                 <Truck className="text-primary w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <h3 className="font-semibold text-sm sm:text-base mb-1 sm:mb-2">Free Shipping</h3>
               <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">On orders above ₹999</p>
-            </div>
+            </motion.div>
 
-            <div className="text-center group min-w-[140px] sm:min-w-[160px]">
+            <motion.div variants={itemVariants} className="text-center group min-w-[140px] sm:min-w-[160px]">
               <div className="bg-primary/10 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:bg-primary/20 transition-colors">
                 <Award className="text-primary w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <h3 className="font-semibold text-sm sm:text-base mb-1 sm:mb-2">Quality Guarantee</h3>
               <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">Premium quality products</p>
-            </div>
+            </motion.div>
 
-            <div className="text-center group min-w-[140px] sm:min-w-[160px]">
+            <motion.div variants={itemVariants} className="text-center group min-w-[140px] sm:min-w-[160px]">
               <div className="bg-primary/10 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:bg-primary/20 transition-colors">
                 <Star className="text-primary w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <h3 className="font-semibold text-sm sm:text-base mb-1 sm:mb-2">Customer Rated</h3>
               <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">4.8/5 customer rating</p>
-            </div>
+            </motion.div>
 
-            <div className="text-center group min-w-[140px] sm:min-w-[160px]">
+            <motion.div variants={itemVariants} className="text-center group min-w-[140px] sm:min-w-[160px]">
               <div className="bg-primary/10 w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:bg-primary/20 transition-colors">
                 <TrendingUp className="text-primary w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <h3 className="font-semibold text-sm sm:text-base mb-1 sm:mb-2">Trending Styles</h3>
               <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">Latest fashion trends</p>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Categories Section */}
       <section className="py-16 sm:py-20 bg-gray-50 dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12 sm:mb-16">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
+          <motion.div variants={itemVariants} className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl font-heading font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
               Categories
             </h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">
               Rooted in culture, rising with confidence            
             </p>
-          </div>
+          </motion.div>
 
           <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8">
             {categories.map((category) => (
-              <Link
+              <motion.div
                 key={category.id}
-                to={`/collections/${category.id}`}
-                className="group relative overflow-hidden rounded-xl sm:rounded-2xl hover-lift min-w-[calc(50%-8px)] sm:min-w-[calc(50%-12px)] lg:min-w-[calc(25%-24px)] flex-1 max-w-[300px]"
+                variants={itemVariants}
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 300 }}
               >
-                <img
-                  src={category.image || '/placeholder-category.jpg'}
-                  alt={category.name}
-                  className="w-full h-48 sm:h-64 object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 transition-all duration-300"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <h3 className="text-white text-xl sm:text-2xl font-heading font-semibold text-center group-hover:scale-105 transition-transform">
-                    {category.name}
-                  </h3>
-                </div>
-              </Link>
+                <Link
+                  to={`/collections/${category.id}`}
+                  className="group relative overflow-hidden rounded-xl sm:rounded-2xl hover-lift min-w-[calc(50%-8px)] sm:min-w-[calc(50%-12px)] lg:min-w-[calc(25%-24px)] flex-1 max-w-[300px] block"
+                >
+                  <img
+                    src={category.image || '/placeholder-category.jpg'}
+                    alt={category.name}
+                    className="w-full h-48 sm:h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 transition-all duration-300"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <h3 className="text-white text-xl sm:text-2xl font-heading font-semibold text-center group-hover:scale-105 transition-transform">
+                      {category.name}
+                    </h3>
+                  </div>
+                </Link>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </section>
 
       <HandMadeSection />
 
       {/* Featured Products */}
       <section className="py-16 sm:py-20 bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12 sm:mb-16">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
+          <motion.div variants={itemVariants} className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl font-heading font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
-              {t('featuredProducts')}
+              Featured Products
             </h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">
               Handpicked items that define style and elegance
             </p>
-          </div>
+          </motion.div>
 
           {featuredProducts.length > 0 ? (
             <>
               <div className="flex flex-wrap justify-center gap-3 sm:gap-4 lg:gap-6">
                 {featuredProducts.map((product) => (
-                  <div key={product.id} className="min-w-[calc(50%-6px)] xs:min-w-[calc(50%-6px)] sm:min-w-[calc(33.333%-16px)] md:min-w-[calc(25%-18px)] max-w-[300px]">
+                  <motion.div
+                    key={product.id}
+                    variants={itemVariants}
+                    className="min-w-[calc(50%-6px)] xs:min-w-[calc(50%-6px)] sm:min-w-[calc(33.333%-16px)] md:min-w-[calc(25%-18px)] max-w-[300px]"
+                  >
                     <ProductCard product={product} />
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
-              <div className="text-center mt-8">
+              <motion.div variants={itemVariants} className="text-center mt-8">
                 <Link
                   to="/collections"
                   className="inline-flex items-center bg-primary hover:bg-primary-light text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold transition-all duration-300 hover:scale-105 text-sm sm:text-base"
@@ -181,10 +240,10 @@ export const Home: React.FC = () => {
                   View All Products
                   <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                 </Link>
-              </div>
+              </motion.div>
             </>
           ) : (
-            <div className="text-center py-8 sm:py-12">
+            <motion.div variants={itemVariants} className="text-center py-8 sm:py-12">
               <div className="text-gray-400 mb-3 sm:mb-4">
                 <TrendingUp className="w-12 h-12 sm:w-16 sm:h-16 mx-auto" />
               </div>
@@ -194,15 +253,20 @@ export const Home: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
                 We're currently updating our featured collection
               </p>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
       </section>
 
       {/* New Arrivals */}
       <section className="py-16 sm:py-20 bg-gray-50 dark:bg-gray-800">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-12 sm:mb-16">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-12 sm:mb-16">
             <div className="text-center sm:text-left mb-4 sm:mb-0">
               <h2 className="text-3xl sm:text-4xl font-heading font-bold text-gray-900 dark:text-white mb-2 sm:mb-4">
                 New Collection
@@ -218,15 +282,19 @@ export const Home: React.FC = () => {
               View All
               <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
-          </div>
+          </motion.div>
 
           {newProducts.length > 0 ? (
             <>
               <div className="flex flex-wrap justify-center gap-3 sm:gap-4 lg:gap-6">
                 {newProducts.map((product) => (
-                  <div key={product.id} className="min-w-[calc(50%-6px)] xs:min-w-[calc(50%-6px)] sm:min-w-[calc(33.333%-16px)] md:min-w-[calc(25%-18px)] max-w-[300px]">
+                  <motion.div
+                    key={product.id}
+                    variants={itemVariants}
+                    className="min-w-[calc(50%-6px)] xs:min-w-[calc(50%-6px)] sm:min-w-[calc(33.333%-16px)] md:min-w-[calc(25%-18px)] max-w-[300px]"
+                  >
                     <ProductCard product={product} />
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
@@ -241,7 +309,7 @@ export const Home: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="text-center py-8 sm:py-12">
+            <motion.div variants={itemVariants} className="text-center py-8 sm:py-12">
               <div className="text-gray-400 mb-3 sm:mb-4">
                 <Award className="w-12 h-12 sm:w-16 sm:h-16 mx-auto" />
               </div>
@@ -251,18 +319,23 @@ export const Home: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
                 Check back for our latest fashion collections
               </p>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
       </section>
 
       {/* Best Sellers */}
       <section className="py-16 sm:py-20 bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-12 sm:mb-16">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4"
+        >
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-12 sm:mb-16">
             <div className="text-center sm:text-left mb-4 sm:mb-0">
               <h2 className="text-3xl sm:text-4xl font-heading font-bold text-gray-900 dark:text-white mb-2 sm:mb-4">
-                {t('bestSellers')}
+                Best Sellers
               </h2>
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
                 Customer favorites that never go out of style
@@ -275,15 +348,19 @@ export const Home: React.FC = () => {
               View All
               <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
-          </div>
+          </motion.div>
 
           {bestSellers.length > 0 ? (
             <>
               <div className="flex flex-wrap justify-center gap-3 sm:gap-4 lg:gap-6">
                 {bestSellers.map((product) => (
-                  <div key={product.id} className="min-w-[calc(50%-6px)] xs:min-w-[calc(50%-6px)] sm:min-w-[calc(33.333%-16px)] md:min-w-[calc(25%-18px)] max-w-[300px]">
+                  <motion.div
+                    key={product.id}
+                    variants={itemVariants}
+                    className="min-w-[calc(50%-6px)] xs:min-w-[calc(50%-6px)] sm:min-w-[calc(33.333%-16px)] md:min-w-[calc(25%-18px)] max-w-[300px]"
+                  >
                     <ProductCard product={product} />
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
@@ -298,7 +375,7 @@ export const Home: React.FC = () => {
               </div>
             </>
           ) : (
-            <div className="text-center py-8 sm:py-12">
+            <motion.div variants={itemVariants} className="text-center py-8 sm:py-12">
               <div className="text-gray-400 mb-3 sm:mb-4">
                 <Star className="w-12 h-12 sm:w-16 sm:h-16 mx-auto" />
               </div>
@@ -308,22 +385,29 @@ export const Home: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
                 Our most popular items will be here soon
               </p>
-            </div>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
       </section>
 
       {/* Newsletter */}
       <section className="py-16 sm:py-20 bg-gradient-to-r from-primary to-primary-light">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl sm:text-4xl font-heading font-bold text-white mb-3 sm:mb-4">
-            Stay in Style
-          </h2>
-          <p className="text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto text-sm sm:text-base">
-            Subscribe to our newsletter and be the first to know about new arrivals, exclusive offers, and fashion tips
-          </p>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="container mx-auto px-4 text-center"
+        >
+          <motion.div variants={itemVariants}>
+            <h2 className="text-3xl sm:text-4xl font-heading font-bold text-white mb-3 sm:mb-4">
+              Stay in Style
+            </h2>
+            <p className="text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto text-sm sm:text-base">
+              Subscribe to our newsletter and be the first to know about new arrivals, exclusive offers, and fashion tips
+            </p>
+          </motion.div>
 
-          <div className="flex flex-col sm:flex-row max-w-md mx-auto">
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row max-w-md mx-auto">
             <input
               type="email"
               placeholder="Enter your email"
@@ -332,9 +416,11 @@ export const Home: React.FC = () => {
             <button className="bg-white text-primary px-6 sm:px-8 py-2.5 sm:py-3 rounded-full sm:rounded-l-none font-semibold hover:bg-gray-100 transition-colors mt-3 sm:mt-0 text-sm sm:text-base">
               Subscribe
             </button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
     </div>
   );
 };
+
+export default Home;
